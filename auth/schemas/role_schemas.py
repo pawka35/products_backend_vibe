@@ -29,24 +29,24 @@ class Role(RoleBase):
     class Config:
         from_attributes = True
 
-class UserRoleBase(BaseModel):
+class RoleAssignmentBase(BaseModel):
     """Базовая схема связи пользователя с ролью"""
     user_id: int = Field(..., description="ID пользователя")
     role_id: int = Field(..., description="ID роли")
     expires_at: Optional[datetime] = Field(None, description="Дата истечения роли")
     is_active: bool = Field(True, description="Активна ли связь")
 
-class UserRoleCreate(UserRoleBase):
+class RoleAssignmentCreate(RoleAssignmentBase):
     """Схема для создания связи пользователя с ролью"""
     pass
 
-class UserRoleUpdate(BaseModel):
+class RoleAssignmentUpdate(BaseModel):
     """Схема для обновления связи пользователя с ролью"""
     role_id: Optional[int] = None
     expires_at: Optional[datetime] = None
     is_active: Optional[bool] = None
 
-class UserRole(UserRoleBase):
+class RoleAssignment(RoleAssignmentBase):
     """Схема связи пользователя с ролью с полной информацией"""
     id: int
     assigned_by: Optional[int] = None
@@ -55,7 +55,7 @@ class UserRole(UserRoleBase):
     class Config:
         from_attributes = True
 
-class UserRoleDetail(UserRole):
+class RoleAssignmentDetail(RoleAssignment):
     """Детальная схема связи пользователя с ролью"""
     role: Role
     assigned_by_user: Optional[str] = Field(None, description="Имя пользователя, назначившего роль")
@@ -71,7 +71,7 @@ class UserWithRoles(BaseModel):
     email: str
     role: str
     is_active: bool
-    user_roles: List[UserRoleDetail] = []
+    role_assignments: List[RoleAssignmentDetail] = []
     
     class Config:
         from_attributes = True

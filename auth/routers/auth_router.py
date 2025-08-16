@@ -4,18 +4,25 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 from database import get_db
 from auth.models import User as UserModel, UserRole
-from auth.schemas import UserCreate, User, Token
+from auth.schemas import UserCreate, UserResponse, Token
 from auth.crud import create_user, authenticate_user
 from auth.utils import create_access_token, get_current_active_user
 from config import settings
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
-@router.post("/register", response_model=User)
+@router.post("/register", response_model=UserResponse)
 async def register(user: UserCreate, db: Session = Depends(get_db)):
     """
     Регистрация нового пользователя
     """
+    # Дополнительная проверка роли (на случай, если валидация схемы не сработает)
+    if user.role == UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Создание пользователей с ролью администратора запрещено"
+        )
+    
     # Проверяем, существует ли пользователь с таким username
     db_user = db.query(UserModel).filter(UserModel.username == user.username).first()
     if db_user:
@@ -55,7 +62,7 @@ async def login_for_access_token(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-@router.get("/me", response_model=User)
+@router.get("/me", response_model=UserResponse)
 async def read_users_me(current_user: UserModel = Depends(get_current_active_user)):
     """
     Получение информации о текущем пользователе

@@ -25,8 +25,8 @@ class User(Base):
     orders = relationship("Order", back_populates="customer")
     search_history = relationship("SearchHistory", back_populates="user")
     
-    # Новые связи для ролей
-    user_roles = relationship("UserRole", back_populates="user")
+    # Связь с ролями (упрощенная)
+    # role_assignments = relationship("RoleAssignment", foreign_keys="RoleAssignment.user_id", back_populates="user")
     
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}', role='{self.role}')>"

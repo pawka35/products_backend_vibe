@@ -1,9 +1,9 @@
 import pytest
 from sqlalchemy.orm import Session
-from auth.models.role_models import Role, UserRole
+from auth.models.role_models import Role, RoleAssignment
 from auth.models.user_models import User, UserRole as UserRoleEnum
-from auth.crud.role_crud import role_crud, user_role_crud
-from auth.schemas.role_schemas import RoleCreate, RoleUpdate, UserRoleCreate
+from auth.crud.role_crud import role_crud, role_assignment_crud
+from auth.schemas.role_schemas import RoleCreate, RoleUpdate, RoleAssignmentCreate
 from auth.utils.auth_utils import create_access_token
 from database import get_db
 
@@ -87,8 +87,8 @@ class TestRoleCRUD:
         deleted_role = role_crud.get_role(db, created_role.id)
         assert deleted_role.is_active is False
 
-class TestUserRoleCRUD:
-    """Тесты для CRUD операций с ролями пользователей"""
+class TestRoleAssignmentCRUD:
+    """Тесты для CRUD операций с назначением ролей пользователям"""
     
     @pytest.fixture
     def sample_role(self, db: Session, sample_user):
@@ -118,59 +118,59 @@ class TestUserRoleCRUD:
     
     def test_assign_role_to_user(self, db: Session, sample_role, sample_customer, sample_user):
         """Тест назначения роли пользователю"""
-        user_role_create = UserRoleCreate(
+        role_assignment_create = RoleAssignmentCreate(
             user_id=sample_customer.id,
             role_id=sample_role.id
         )
         
-        user_role = user_role_crud.assign_role_to_user(
-            db, user_role_create, sample_user.id
+        role_assignment = role_assignment_crud.assign_role_to_user(
+            db, role_assignment_create, sample_user.id
         )
         
-        assert user_role.user_id == sample_customer.id
-        assert user_role.role_id == sample_role.id
-        assert user_role.assigned_by == sample_user.id
-        assert user_role.is_active is True
+        assert role_assignment.user_id == sample_customer.id
+        assert role_assignment.role_id == sample_role.id
+        assert role_assignment.assigned_by == sample_user.id
+        assert role_assignment.is_active is True
     
     def test_assign_duplicate_role(self, db: Session, sample_role, sample_customer, sample_user):
         """Тест попытки назначить уже существующую роль"""
-        user_role_create = UserRoleCreate(
+        role_assignment_create = RoleAssignmentCreate(
             user_id=sample_customer.id,
             role_id=sample_role.id
         )
         
         # Назначаем роль первый раз
-        user_role_crud.assign_role_to_user(db, user_role_create, sample_user.id)
+        role_assignment_crud.assign_role_to_user(db, role_assignment_create, sample_user.id)
         
         # Пытаемся назначить ту же роль снова
         with pytest.raises(ValueError, match="Роль уже назначена пользователю"):
-            user_role_crud.assign_role_to_user(db, user_role_create, sample_user.id)
+            role_assignment_crud.assign_role_to_user(db, role_assignment_create, sample_user.id)
     
     def test_get_user_roles(self, db: Session, sample_role, sample_customer, sample_user):
         """Тест получения ролей пользователя"""
-        user_role_create = UserRoleCreate(
+        role_assignment_create = RoleAssignmentCreate(
             user_id=sample_customer.id,
             role_id=sample_role.id
         )
-        user_role_crud.assign_role_to_user(db, user_role_create, sample_user.id)
+        role_assignment_crud.assign_role_to_user(db, role_assignment_create, sample_user.id)
         
-        user_roles = user_role_crud.get_user_roles(db, sample_customer.id)
+        user_roles = role_assignment_crud.get_user_roles(db, sample_customer.id)
         assert len(user_roles) == 1
         assert user_roles[0].role_id == sample_role.id
     
     def test_remove_role_from_user(self, db: Session, sample_role, sample_customer, sample_user):
         """Тест удаления роли у пользователя"""
-        user_role_create = UserRoleCreate(
+        role_assignment_create = RoleAssignmentCreate(
             user_id=sample_customer.id,
             role_id=sample_role.id
         )
-        user_role = user_role_crud.assign_role_to_user(db, user_role_create, sample_user.id)
+        role_assignment = role_assignment_crud.assign_role_to_user(db, role_assignment_create, sample_user.id)
         
-        success = user_role_crud.remove_role_from_user(db, user_role.id)
+        success = role_assignment_crud.remove_role_from_user(db, role_assignment.id)
         assert success is True
         
         # Проверяем, что роль деактивирована
-        user_roles = user_role_crud.get_user_roles(db, sample_customer.id, active_only=True)
+        user_roles = role_assignment_crud.get_user_roles(db, sample_customer.id, active_only=True)
         assert len(user_roles) == 0
 
 class TestRolePermissions:
