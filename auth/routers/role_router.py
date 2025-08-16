@@ -53,7 +53,7 @@ async def get_roles(
     if active_only:
         roles_with_count = [
             item for item in roles_with_count 
-            if item["role"].is_active
+            if item["is_active"]
         ]
     
     return roles_with_count
