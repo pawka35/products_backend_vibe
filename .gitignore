@@ -184,3 +184,5 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+dev.sh
+stop-dev.sh
