@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from auth.models.user_models import User, UserRole
 from auth.utils.auth_utils import get_password_hash
 from database import get_db
+from auth.models.role_models import Role
 
 def generate_secure_password(length: int = 16) -> str:
     """Генерирует безопасный пароль"""
@@ -73,6 +74,66 @@ def ensure_admin_exists():
             
     except Exception as e:
         print(f"❌ Ошибка проверки администратора: {e}")
+        return False
+    finally:
+        if 'db' in locals():
+            db.close()
+
+def create_basic_roles(db: Session) -> bool:
+    """
+    Создает базовые роли в системе, если их нет
+    """
+    try:
+        # Проверяем, есть ли уже роли
+        existing_roles = db.query(Role).count()
+        if existing_roles > 0:
+            print("✅ Базовые роли уже существуют в системе")
+            return True
+        
+        # Создаем базовые роли
+        basic_roles = [
+            {
+                "name": "admin",
+                "description": "Системная роль администратора",
+                "permissions": '{"all": true}',
+                "is_active": True
+            },
+            {
+                "name": "customer",
+                "description": "Роль покупателя",
+                "permissions": '{"read_products": true, "create_orders": true}',
+                "is_active": True
+            },
+            {
+                "name": "executor",
+                "description": "Роль исполнителя заказов",
+                "permissions": '{"read_orders": true, "update_orders": true}',
+                "is_active": True
+            }
+        ]
+        
+        for role_data in basic_roles:
+            role = Role(**role_data)
+            db.add(role)
+        
+        db.commit()
+        print("✅ Созданы базовые роли: admin, customer, executor")
+        return True
+        
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Ошибка создания базовых ролей: {e}")
+        return False
+
+def ensure_basic_roles():
+    """Проверяет и создает базовые роли при необходимости"""
+    try:
+        db = next(get_db())
+        success = create_basic_roles(db)
+        return success
+        
+    except Exception as e:
+        print(f"❌ Ошибка проверки базовых ролей: {e}")
         return False
     finally:
         if 'db' in locals():

@@ -33,33 +33,24 @@ class RoleCRUD:
     
     def get_roles_with_users_count(self, db: Session, skip: int = 0, limit: int = 100) -> List[dict]:
         """Получение ролей с количеством пользователей"""
-        # Используем raw SQL для избежания проблем с связями
-        result = db.execute("""
-            SELECT r.id, r.name, r.description, r.permissions, r.is_active, r.created_at, r.updated_at,
-                   COUNT(ur.user_id) as users_count
-            FROM roles r
-            LEFT JOIN user_roles ur ON r.id = ur.role_id AND ur.is_active = 1
-            GROUP BY r.id
-            LIMIT :limit OFFSET :skip
-        """, {"limit": limit, "skip": skip})
+        # Используем ORM вместо raw SQL
+        from sqlalchemy import func
         
-        roles_with_count = []
-        for row in result:
-            role = Role(
-                id=row.id,
-                name=row.name,
-                description=row.description,
-                permissions=row.permissions,
-                is_active=row.is_active,
-                created_at=row.created_at,
-                updated_at=row.updated_at
-            )
-            roles_with_count.append({
+        result = db.query(
+            Role,
+            func.count(RoleAssignment.user_id).label('users_count')
+        ).outerjoin(
+            RoleAssignment, 
+            (Role.id == RoleAssignment.role_id) & (RoleAssignment.is_active == True)
+        ).group_by(Role.id).offset(skip).limit(limit).all()
+        
+        return [
+            {
                 "role": role,
-                "users_count": row.users_count
-            })
-        
-        return roles_with_count
+                "users_count": users_count
+            }
+            for role, users_count in result
+        ]
     
     def update_role(self, db: Session, role_id: int, role_update: RoleUpdate) -> Optional[Role]:
         """Обновление роли"""
@@ -173,48 +164,27 @@ class RoleAssignmentCRUD:
     
     def get_user_roles_detailed(self, db: Session, user_id: int) -> List[dict]:
         """Получение детальной информации о ролях пользователя"""
-        # Используем raw SQL для избежания проблем с связями
-        result = db.execute("""
-            SELECT ur.id, ur.user_id, ur.role_id, ur.assigned_by, ur.assigned_at, ur.expires_at, ur.is_active,
-                   r.id as role_id, r.name as role_name, r.description as role_description, 
-                   r.permissions as role_permissions, r.is_active as role_is_active,
-                   r.created_at as role_created_at, r.updated_at as role_updated_at,
-                   u.username as assigned_by_username
-            FROM user_roles ur
-            JOIN roles r ON ur.role_id = r.id
-            LEFT JOIN users u ON ur.assigned_by = u.id
-            WHERE ur.user_id = :user_id
-        """, {"user_id": user_id})
+        # Используем ORM вместо raw SQL
+        result = db.query(
+            RoleAssignment,
+            Role,
+            User.username.label('assigned_by_username')
+        ).join(
+            Role, RoleAssignment.role_id == Role.id
+        ).outerjoin(
+            User, RoleAssignment.assigned_by == User.id
+        ).filter(
+            RoleAssignment.user_id == user_id
+        ).all()
         
-        detailed_roles = []
-        for row in result:
-            role = Role(
-                id=row.role_id,
-                name=row.role_name,
-                description=row.role_description,
-                permissions=row.role_permissions,
-                is_active=row.role_is_active,
-                created_at=row.role_created_at,
-                updated_at=row.role_updated_at
-            )
-            
-            role_assignment = RoleAssignment(
-                id=row.id,
-                user_id=row.user_id,
-                role_id=row.role_id,
-                assigned_by=row.assigned_by,
-                assigned_at=row.assigned_at,
-                expires_at=row.expires_at,
-                is_active=row.is_active
-            )
-            
-            detailed_roles.append({
+        return [
+            {
                 "role_assignment": role_assignment,
                 "role": role,
-                "assigned_by_username": row.assigned_by_username
-            })
-        
-        return detailed_roles
+                "assigned_by_username": assigned_by_username
+            }
+            for role_assignment, role, assigned_by_username in result
+        ]
 
 # Создаем экземпляры для использования
 role_crud = RoleCRUD()

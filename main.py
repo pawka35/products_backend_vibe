@@ -7,14 +7,17 @@ from auth.routers.role_router import router as role_router
 from app.routers import users_router
 from app.admin import admin_router
 from products.routers import orders_router, executor_router, search_router
-from auth.utils.admin_init import ensure_admin_exists
+from auth.utils.admin_init import ensure_admin_exists, ensure_basic_roles
 
 # Создаем таблицы в базе данных
 Base.metadata.create_all(bind=engine)
 
-# Инициализируем администратора при запуске
+# Инициализируем администратора и базовые роли при запуске
 print("🔍 Проверяем наличие администратора в системе...")
 ensure_admin_exists()
+
+print("🔍 Проверяем наличие базовых ролей в системе...")
+ensure_basic_roles()
 
 app = FastAPI(
     title="FastAPI Auth System", 
