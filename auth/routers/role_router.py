@@ -46,10 +46,17 @@ async def get_roles(
     """
     Получение списка ролей с количеством пользователей (только для администраторов)
     """
+    # Всегда используем метод с количеством пользователей для единообразия
+    roles_with_count = role_crud.get_roles_with_users_count(db, skip, limit)
+    
+    # Если нужны только активные роли, фильтруем результат
     if active_only:
-        return role_crud.get_roles(db, skip, limit, active_only=True)
-    else:
-        return role_crud.get_roles_with_users_count(db, skip, limit)
+        roles_with_count = [
+            item for item in roles_with_count 
+            if item["role"].is_active
+        ]
+    
+    return roles_with_count
 
 @router.get("/{role_id}", response_model=Role)
 async def get_role(

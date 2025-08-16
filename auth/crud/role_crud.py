@@ -44,13 +44,23 @@ class RoleCRUD:
             (Role.id == RoleAssignment.role_id) & (RoleAssignment.is_active == True)
         ).group_by(Role.id).offset(skip).limit(limit).all()
         
-        return [
-            {
-                "role": role,
+        # Преобразуем в правильный формат для RoleWithUsers
+        roles_with_count = []
+        for role, users_count in result:
+            # Создаем объект с полями роли и users_count
+            role_dict = {
+                "id": role.id,
+                "name": role.name,
+                "description": role.description,
+                "permissions": role.permissions,
+                "is_active": role.is_active,
+                "created_at": role.created_at,
+                "updated_at": role.updated_at,
                 "users_count": users_count
             }
-            for role, users_count in result
-        ]
+            roles_with_count.append(role_dict)
+        
+        return roles_with_count
     
     def update_role(self, db: Session, role_id: int, role_update: RoleUpdate) -> Optional[Role]:
         """Обновление роли"""
