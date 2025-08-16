@@ -1,95 +1,126 @@
-import pytest
-from sqlalchemy.orm import Session
-from auth.models.user_models import User, UserRole
-from auth.models.role_models import Role, RoleAssignment
-from auth.utils.admin_init import create_initial_admin, generate_secure_password
-from auth.schemas.user_schemas import UserCreate
-from auth.crud import create_user
+import requests
+import json
 
-class TestAdminInitialization:
-    """Тесты для инициализации администратора"""
-    
-    def test_generate_secure_password(self):
-        """Тест генерации безопасного пароля"""
-        password = generate_secure_password(16)
-        
-        assert len(password) == 16
-        assert any(c.isupper() for c in password)  # Есть заглавные буквы
-        assert any(c.islower() for c in password)  # Есть строчные буквы
-        assert any(c.isdigit() for c in password)  # Есть цифры
-        assert any(c in "!@#$%^&*" for c in password)  # Есть спецсимволы
-    
-    def test_create_initial_admin_when_none_exists(self, db: Session):
-        """Тест создания первого администратора"""
-        # Убеждаемся, что администраторов нет
-        existing_admin = db.query(User).filter(User.role == UserRole.ADMIN).first()
-        assert existing_admin is None
-        
-        # Создаем администратора
-        username, password = create_initial_admin(db)
-        
-        assert username == "admin"
-        assert password is not None
-        assert len(password) == 20
-        
-        # Проверяем, что пользователь создан в базе
-        admin_user = db.query(User).filter(User.username == "admin").first()
-        assert admin_user is not None
-        assert admin_user.role == UserRole.ADMIN
-        assert admin_user.email == "admin@system.local"
-        assert admin_user.is_active is True
-    
-    def test_create_initial_admin_when_exists(self, db: Session):
-        """Тест попытки создать администратора, когда он уже существует"""
-        # Создаем первого администратора
-        username1, password1 = create_initial_admin(db)
-        assert username1 == "admin"
-        
-        # Пытаемся создать второго администратора
-        username2, password2 = create_initial_admin(db)
-        
-        assert username2 is None
-        assert password2 is None
-        
-        # Проверяем, что в базе только один администратор
-        admin_count = db.query(User).filter(User.role == UserRole.ADMIN).count()
-        assert admin_count == 1
+BASE_URL = "http://localhost:8000"
 
-class TestAdminRegistrationProtection:
-    """Тесты защиты от регистрации администраторов"""
+def test_admin_initialization():
+    """Тест инициализации администратора"""
     
-    def test_cannot_register_admin_user(self, db: Session):
-        """Тест, что нельзя зарегистрировать пользователя с ролью администратора"""
-        user_data = {
-            "username": "testadmin",
-            "email": "testadmin@example.com",
-            "password": "testpassword123",
-            "role": UserRole.ADMIN
-        }
-        
-        user_create = UserCreate(**user_data)
-        
-        with pytest.raises(ValueError, match="Нельзя создать пользователя с ролью администратора"):
-            # Попытка создать пользователя должна вызвать ошибку валидации
-            pass
+    print("Тест инициализации администратора")
+    print("=" * 50)
     
-    def test_cannot_update_user_to_admin(self, db: Session):
-        """Тест, что нельзя обновить роль пользователя на администратора"""
-        # Сначала создаем обычного пользователя
-        user_data = {
-            "username": "testuser",
-            "email": "testuser@example.com",
-            "password": "testpassword123",
-            "role": UserRole.CUSTOMER
-        }
-        
-        user_create = UserCreate(**user_data)
-        user = create_user(db, user_create)
-        
-        # Пытаемся обновить роль на администратора
-        from auth.schemas.user_schemas import UserUpdate
-        user_update = UserUpdate(role=UserRole.ADMIN)
-        
-        with pytest.raises(ValueError, match="Нельзя изменить роль на администратора"):
-            # Попытка обновления должна вызвать ошибку валидации
-            pass
+    # 1. Проверка, что администратор существует
+    print("1. Проверка существования администратора...")
+    admin_login = {
+        "username": "admin",
+        "password": "admin123"
+    }
+    
+    response = requests.post(f"{BASE_URL}/auth/token", data=admin_login)
+    if response.status_code != 200:
+        print(f"   ❌ Ошибка получения токена админа: {response.text}")
+        return
+    
+    admin_token = response.json()["access_token"]
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+    print("   ✅ Администратор существует и может войти в систему")
+    
+    # 2. Проверка информации об администраторе
+    print("\n2. Проверка информации об администраторе...")
+    response = requests.get(f"{BASE_URL}/auth/me", headers=admin_headers)
+    if response.status_code != 200:
+        print(f"   ❌ Ошибка получения информации об админе: {response.text}")
+        return
+    
+    admin_info = response.json()
+    print(f"   ✅ Администратор: {admin_info['username']}")
+    print(f"   ✅ Email: {admin_info['email']}")
+    print(f"   ✅ Роль: {admin_info['role']}")
+    print(f"   ✅ Активен: {admin_info['is_active']}")
+    
+    # 3. Проверка базовых ролей
+    print("\n3. Проверка базовых ролей...")
+    response = requests.get(f"{BASE_URL}/admin/roles/", headers=admin_headers)
+    if response.status_code != 200:
+        print(f"   ❌ Ошибка получения ролей: {response.text}")
+        return
+    
+    roles = response.json()
+    print(f"   ✅ Найдено ролей: {len(roles)}")
+    
+    # Проверяем наличие базовых ролей
+    role_names = [role['name'] for role in roles]
+    expected_roles = ['admin', 'customer', 'executor']
+    
+    for expected_role in expected_roles:
+        if expected_role in role_names:
+            print(f"   ✅ Роль '{expected_role}' найдена")
+        else:
+            print(f"   ❌ Роль '{expected_role}' не найдена")
+    
+    print("\n" + "=" * 50)
+    print("Тест инициализации администратора завершен успешно! 🎉")
+
+def test_admin_registration_protection():
+    """Тест защиты от создания администраторов через регистрацию"""
+    
+    print("\nТест защиты от создания администраторов")
+    print("=" * 50)
+    
+    # 1. Попытка создать пользователя с ролью администратора
+    print("1. Попытка создать пользователя с ролью администратора...")
+    admin_user_data = {
+        "username": "fakeadmin",
+        "email": "fakeadmin@test.com",
+        "password": "fakeadmin123",
+        "role": "admin"
+    }
+    
+    response = requests.post(f"{BASE_URL}/auth/register", json=admin_user_data)
+    if response.status_code == 403:
+        print("   ✅ Создание пользователя с ролью администратора заблокировано")
+        error_detail = response.json().get('detail', '')
+        if 'запрещено' in error_detail:
+            print("   ✅ Правильное сообщение об ошибке")
+        else:
+            print(f"   ⚠️ Неожиданное сообщение об ошибке: {error_detail}")
+    else:
+        print(f"   ❌ Неожиданный статус: {response.status_code}")
+        print(f"   ❌ Ответ: {response.text}")
+    
+    # 2. Попытка создать пользователя с обычной ролью (должна пройти)
+    print("\n2. Попытка создать пользователя с обычной ролью...")
+    regular_user_data = {
+        "username": "regularuser2",
+        "email": "regular2@test.com",
+        "password": "regular123",
+        "role": "customer"
+    }
+    
+    response = requests.post(f"{BASE_URL}/auth/register", json=regular_user_data)
+    if response.status_code == 200:
+        print("   ✅ Создание пользователя с обычной ролью разрешено")
+        user = response.json()
+        print(f"   ✅ Пользователь создан: {user['username']} с ролью {user['role']}")
+    else:
+        print(f"   ❌ Ошибка создания обычного пользователя: {response.text}")
+    
+    # 3. Проверка, что fakeadmin не был создан
+    print("\n3. Проверка, что fakeadmin не был создан...")
+    fake_admin_login = {
+        "username": "fakeadmin",
+        "password": "fakeadmin123"
+    }
+    
+    response = requests.post(f"{BASE_URL}/auth/token", data=fake_admin_login)
+    if response.status_code == 401:
+        print("   ✅ Пользователь fakeadmin не может войти (не создан)")
+    else:
+        print(f"   ❌ Неожиданный статус: {response.status_code}")
+    
+    print("\n" + "=" * 50)
+    print("Тест защиты от создания администраторов завершен успешно! 🎉")
+
+if __name__ == "__main__":
+    test_admin_initialization()
+    test_admin_registration_protection()

@@ -33,20 +33,16 @@ class RoleCRUD:
     
     def get_roles_with_users_count(self, db: Session, skip: int = 0, limit: int = 100) -> List[dict]:
         """Получение ролей с количеством пользователей"""
-        # Используем ORM вместо raw SQL
-        from sqlalchemy import func
+        # Получаем все роли
+        roles = db.query(Role).offset(skip).limit(limit).all()
         
-        result = db.query(
-            Role,
-            func.count(RoleAssignment.user_id).label('users_count')
-        ).outerjoin(
-            RoleAssignment, 
-            (Role.id == RoleAssignment.role_id) & (RoleAssignment.is_active == True)
-        ).group_by(Role.id).offset(skip).limit(limit).all()
-        
-        # Преобразуем в правильный формат для RoleWithUsers
+        # Для каждой роли получаем количество пользователей отдельным запросом
         roles_with_count = []
-        for role, users_count in result:
+        for role in roles:
+            users_count = db.query(RoleAssignment).filter(
+                and_(RoleAssignment.role_id == role.id, RoleAssignment.is_active == True)
+            ).count()
+            
             # Создаем объект с полями роли и users_count
             role_dict = {
                 "id": role.id,
@@ -131,12 +127,55 @@ class RoleAssignmentCRUD:
         db.refresh(db_role_assignment)
         return db_role_assignment
     
-    def get_user_roles(self, db: Session, user_id: int, active_only: bool = True) -> List[RoleAssignment]:
-        """Получение ролей пользователя"""
-        query = db.query(RoleAssignment).filter(RoleAssignment.user_id == user_id)
+    def get_user_roles(self, db: Session, user_id: int, active_only: bool = True) -> List[dict]:
+        """Получение ролей пользователя (включая базовую роль и дополнительные роли)"""
+        from auth.models.user_models import User
+        
+        # Получаем базовую роль пользователя
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return []
+        
+        # Создаем результат с базовой ролью
+        result = []
+        
+        # Добавляем базовую роль как "системную"
+        base_role = {
+            "id": None,  # У базовой роли нет ID в user_roles
+            "user_id": user_id,
+            "role_id": None,  # Будем использовать enum значение
+            "role_name": user.role.value,  # admin, customer, executor
+            "role_type": "base",  # Указываем, что это базовая роль
+            "assigned_by": None,
+            "assigned_at": user.created_at,
+            "expires_at": None,
+            "is_active": user.is_active
+        }
+        result.append(base_role)
+        
+        # Получаем дополнительные роли из таблицы user_roles
+        additional_roles = db.query(RoleAssignment).filter(RoleAssignment.user_id == user_id)
         if active_only:
-            query = query.filter(RoleAssignment.is_active == True)
-        return query.all()
+            additional_roles = additional_roles.filter(RoleAssignment.is_active == True)
+        
+        for role_assignment in additional_roles.all():
+            # Получаем информацию о роли
+            role = db.query(Role).filter(Role.id == role_assignment.role_id).first()
+            if role:
+                additional_role = {
+                    "id": role_assignment.id,
+                    "user_id": role_assignment.user_id,
+                    "role_id": role_assignment.role_id,
+                    "role_name": role.name,
+                    "role_type": "additional",  # Указываем, что это дополнительная роль
+                    "assigned_by": role_assignment.assigned_by,
+                    "assigned_at": role_assignment.assigned_at,
+                    "expires_at": role_assignment.expires_at,
+                    "is_active": role_assignment.is_active
+                }
+                result.append(additional_role)
+        
+        return result
     
     def get_role_assignment(self, db: Session, role_assignment_id: int) -> Optional[RoleAssignment]:
         """Получение конкретной связи пользователя с ролью"""
@@ -168,33 +207,22 @@ class RoleAssignmentCRUD:
     
     def get_users_by_role(self, db: Session, role_id: int, skip: int = 0, limit: int = 100) -> List[User]:
         """Получение пользователей по роли"""
-        return db.query(User).join(RoleAssignment).filter(
+        # Получаем ID пользователей с этой ролью
+        role_assignments = db.query(RoleAssignment).filter(
             and_(RoleAssignment.role_id == role_id, RoleAssignment.is_active == True)
         ).offset(skip).limit(limit).all()
-    
-    def get_user_roles_detailed(self, db: Session, user_id: int) -> List[dict]:
-        """Получение детальной информации о ролях пользователя"""
-        # Используем ORM вместо raw SQL
-        result = db.query(
-            RoleAssignment,
-            Role,
-            User.username.label('assigned_by_username')
-        ).join(
-            Role, RoleAssignment.role_id == Role.id
-        ).outerjoin(
-            User, RoleAssignment.assigned_by == User.id
-        ).filter(
-            RoleAssignment.user_id == user_id
-        ).all()
         
-        return [
-            {
-                "role_assignment": role_assignment,
-                "role": role,
-                "assigned_by_username": assigned_by_username
-            }
-            for role_assignment, role, assigned_by_username in result
-        ]
+        # Получаем пользователей отдельными запросами
+        user_ids = [ra.user_id for ra in role_assignments]
+        if not user_ids:
+            return []
+        
+        users = db.query(User).filter(User.id.in_(user_ids)).all()
+        return users
+    
+    def get_role_assignment(self, db: Session, role_assignment_id: int) -> Optional[RoleAssignment]:
+        """Получение конкретной связи пользователя с ролью"""
+        return db.query(RoleAssignment).filter(RoleAssignment.id == role_assignment_id).first()
 
 # Создаем экземпляры для использования
 role_crud = RoleCRUD()

@@ -3,7 +3,7 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 from database import engine, Base
 from auth.routers import auth_router
-from auth.routers.role_router import router as role_router
+from auth.routers.role_router import router as role_router # Добавляю обратно
 from app.routers import users_router
 from app.admin import admin_router
 from products.routers import orders_router, executor_router, search_router

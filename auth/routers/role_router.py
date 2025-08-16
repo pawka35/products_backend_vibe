@@ -182,7 +182,7 @@ async def assign_role_to_user(
             detail=str(e)
         )
 
-@router.get("/users/{user_id}", response_model=List[RoleAssignment])
+@router.get("/users/{user_id}", response_model=List[dict])
 async def get_user_roles(
     user_id: int,
     active_only: bool = Query(True, description="Только активные роли"),
@@ -191,25 +191,12 @@ async def get_user_roles(
 ):
     """
     Получение ролей пользователя (только для администраторов)
+    Включает базовую роль из таблицы users и дополнительные роли из таблицы user_roles
     """
     # Проверяем права на просмотр целевого пользователя
     check_user_permissions(user_id, current_user, db)
     
     return role_assignment_crud.get_user_roles(db, user_id, active_only)
-
-@router.get("/users/{user_id}/detailed", response_model=List[dict])
-async def get_user_roles_detailed(
-    user_id: int,
-    current_user: User = Depends(get_current_admin_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Получение детальной информации о ролях пользователя (только для администраторов)
-    """
-    # Проверяем права на просмотр целевого пользователя
-    check_user_permissions(user_id, current_user, db)
-    
-    return role_assignment_crud.get_user_roles_detailed(db, user_id)
 
 @router.put("/users/{role_assignment_id}", response_model=RoleAssignment)
 async def update_user_role(
@@ -271,7 +258,9 @@ async def remove_role_from_user(
     check_user_permissions(current_role_assignment.user_id, current_user, db)
     
     # Проверяем, не пытается ли удалить роль admin у пользователя
-    if current_role_assignment.role.name == "admin":
+    # Получаем информацию о роли явно из базы данных
+    role = role_crud.get_role(db, current_role_assignment.role_id)
+    if role and role.name == "admin":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Нельзя удалить системную роль 'admin' у пользователя."
