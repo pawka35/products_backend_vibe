@@ -1,4 +1,4 @@
-from .user_schemas import User, UserCreate, UserUpdate, UserResponse, Token, TokenData, UserLogin
+from .user_schemas import User, UserCreate, UserUpdate, UserResponse, UserList, Token, TokenData, UserLogin
 from .role_schemas import (
     Role, RoleCreate, RoleUpdate, 
     RoleAssignment, RoleAssignmentCreate, RoleAssignmentUpdate,
@@ -6,7 +6,7 @@ from .role_schemas import (
 )
 
 __all__ = [
-    "User", "UserCreate", "UserUpdate", "UserResponse", "Token", "TokenData", "UserLogin",
+    "User", "UserCreate", "UserUpdate", "UserResponse", "UserList", "Token", "TokenData", "UserLogin",
     "Role", "RoleCreate", "RoleUpdate", 
     "RoleAssignment", "RoleAssignmentCreate", "RoleAssignmentUpdate",
     "RoleWithUsers", "UserWithRoles"

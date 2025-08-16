@@ -59,3 +59,16 @@ class TokenData(BaseModel):
 class UserLogin(BaseModel):
     username: str
     password: str
+
+class UserList(BaseModel):
+    """Схема для списка пользователей без валидации роли"""
+    id: int
+    username: str
+    email: EmailStr
+    role: UserRole
+    is_active: bool
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

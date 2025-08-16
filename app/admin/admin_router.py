@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from database import get_db
 from auth.models import User as UserModel, UserRole
-from auth.schemas import User as UserSchema
+from auth.schemas import UserResponse, UserList
 from auth.utils import get_current_active_user
 from auth.crud import get_users, get_user, get_users_by_role
 from app.crud import (
@@ -31,7 +31,7 @@ def require_admin(current_user: UserModel = Depends(get_current_active_user)):
         )
     return current_user
 
-@router.get("/users", response_model=List[UserSchema])
+@router.get("/users", response_model=List[UserList])
 async def admin_get_users(
     skip: int = 0,
     limit: int = 100,
@@ -44,7 +44,7 @@ async def admin_get_users(
     users = get_users(db, skip=skip, limit=limit)
     return users
 
-@router.get("/users/{user_id}", response_model=UserSchema)
+@router.get("/users/{user_id}", response_model=UserResponse)
 async def admin_get_user(
     user_id: int,
     current_user: UserModel = Depends(require_admin),
@@ -119,7 +119,7 @@ async def admin_deactivate_user(
         message="Пользователь успешно деактивирован"
     )
 
-@router.get("/users/role/{role}", response_model=List[UserSchema])
+@router.get("/users/role/{role}", response_model=List[UserList])
 async def admin_get_users_by_role(
     role: UserRole,
     skip: int = 0,

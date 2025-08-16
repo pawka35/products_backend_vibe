@@ -3,13 +3,13 @@ from sqlalchemy.orm import Session
 from typing import List
 from database import get_db
 from auth.models import User as UserModel, UserRole
-from auth.schemas import User as UserSchema
+from auth.schemas import UserResponse, UserList
 from auth.utils import get_current_active_user
 from auth.crud import get_users, get_user, get_users_by_role
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-@router.get("/", response_model=List[UserSchema])
+@router.get("/", response_model=List[UserList])
 async def get_all_users(
     skip: int = 0,
     limit: int = 100,
@@ -22,7 +22,7 @@ async def get_all_users(
     users = get_users(db, skip=skip, limit=limit)
     return users
 
-@router.get("/{user_id}", response_model=UserSchema)
+@router.get("/{user_id}", response_model=UserResponse)
 async def get_user_by_id(
     user_id: int,
     current_user: UserModel = Depends(get_current_active_user),
@@ -36,7 +36,7 @@ async def get_user_by_id(
         raise HTTPException(status_code=404, detail="Пользователь не найден")
     return user
 
-@router.get("/role/{role}", response_model=List[UserSchema])
+@router.get("/role/{role}", response_model=List[UserList])
 async def get_users_by_role_endpoint(
     role: UserRole,
     skip: int = 0,

@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from auth.models import UserRole
-from auth.schemas import User
+from auth.schemas import UserResponse
 
 class ChangePasswordRequest(BaseModel):
     new_password: str
@@ -11,7 +11,7 @@ class ChangeRoleRequest(BaseModel):
 
 class UserManagementResponse(BaseModel):
     message: str
-    user: Optional[User] = None
+    user: Optional[UserResponse] = None
 
 class UserStatistics(BaseModel):
     total_users: int
