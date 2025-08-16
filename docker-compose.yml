@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # MySQL база данных
+  mysql:
+    image: mysql:8.0
+    container_name: fastapi_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: fastapi_auth
+      MYSQL_USER: fastapi_user
+      MYSQL_PASSWORD: fastapi_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "fastapi_user", "-pfastapi_password"]
+      timeout: 20s
+      retries: 10
+      start_period: 30s
+
+  # FastAPI приложение
+  fastapi:
+    build: .
+    container_name: fastapi_app
+    restart: always
+    environment:
+      - DATABASE_URL=mysql+pymysql://fastapi_user:fastapi_password@mysql:3306/fastapi_auth
+      - SECRET_KEY=your-secret-key-here-change-in-production
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - app_network
+    volumes:
+      - ./logs:/app/logs
+
+  # Nginx прокси-сервер
+  nginx:
+    build: ./nginx
+    container_name: fastapi_nginx
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      fastapi:
+        condition: service_started
+    networks:
+      - app_network
+    volumes:
+      - ./nginx/logs:/var/log/nginx
+
+volumes:
+  mysql_data:
+
+networks:
+  app_network:
+    driver: bridge
