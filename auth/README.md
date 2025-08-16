@@ -56,8 +56,8 @@ auth/
 - `GET /auth/me` - Информация о текущем пользователе
 
 ### Управление ролями (только для администраторов)
-- `GET /admin/roles/` - Список всех ролей
-- `POST /admin/roles/` - Создание новой роли
+- `GET /admin/roles` - Список всех ролей
+- `POST /admin/roles` - Создание новой роли
 - `GET /admin/roles/{id}` - Получение роли по ID
 - `PUT /admin/roles/{id}` - Обновление роли
 - `DELETE /admin/roles/{id}` - Удаление роли

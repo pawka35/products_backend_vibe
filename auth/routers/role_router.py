@@ -12,11 +12,11 @@ from auth.schemas.role_schemas import (
 )
 from auth.schemas.user_schemas import User as UserSchema
 
-router = APIRouter(prefix="/admin/roles", tags=["admin-roles"])
+router = APIRouter(prefix="/admin", tags=["admin"])
 
 # ==================== УПРАВЛЕНИЕ РОЛЯМИ ====================
 
-@router.post("/", response_model=Role, status_code=status.HTTP_201_CREATED)
+@router.post("/roles", response_model=Role, status_code=status.HTTP_201_CREATED)
 async def create_role(
     role: RoleCreate,
     current_user: User = Depends(get_current_admin_user),
@@ -35,7 +35,7 @@ async def create_role(
     
     return role_crud.create_role(db, role, current_user.id)
 
-@router.get("/", response_model=List[RoleWithUsers])
+@router.get("/roles", response_model=List[RoleWithUsers])
 async def get_roles(
     skip: int = Query(0, ge=0, description="Количество пропущенных записей"),
     limit: int = Query(100, ge=1, le=1000, description="Максимальное количество записей"),
@@ -58,7 +58,7 @@ async def get_roles(
     
     return roles_with_count
 
-@router.get("/{role_id}", response_model=Role)
+@router.get("/roles/{role_id}", response_model=Role)
 async def get_role(
     role_id: int,
     current_user: User = Depends(get_current_admin_user),
@@ -75,7 +75,7 @@ async def get_role(
         )
     return role
 
-@router.put("/{role_id}", response_model=Role)
+@router.put("/roles/{role_id}", response_model=Role)
 async def update_role(
     role_id: int,
     role_update: RoleUpdate,
@@ -111,7 +111,7 @@ async def update_role(
     
     return updated_role
 
-@router.delete("/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/roles/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_role(
     role_id: int,
     current_user: User = Depends(get_current_admin_user),
@@ -142,7 +142,7 @@ async def delete_role(
             detail="Не удалось удалить роль."
         )
 
-@router.post("/{role_id}/activate", response_model=Role)
+@router.post("/roles/{role_id}/activate", response_model=Role)
 async def activate_role(
     role_id: int,
     current_user: User = Depends(get_current_admin_user),
@@ -162,7 +162,7 @@ async def activate_role(
 
 # ==================== УПРАВЛЕНИЕ РОЛЯМИ ПОЛЬЗОВАТЕЛЕЙ ====================
 
-@router.post("/users/assign", response_model=RoleAssignment, status_code=status.HTTP_201_CREATED)
+@router.post("/roles/users/assign", response_model=RoleAssignment, status_code=status.HTTP_201_CREATED)
 async def assign_role_to_user(
     role_assignment: RoleAssignmentCreate,
     current_user: User = Depends(get_current_admin_user),
@@ -182,7 +182,7 @@ async def assign_role_to_user(
             detail=str(e)
         )
 
-@router.get("/users/{user_id}", response_model=List[dict])
+@router.get("/roles/users/{user_id}", response_model=List[dict])
 async def get_user_roles(
     user_id: int,
     active_only: bool = Query(True, description="Только активные роли"),
@@ -198,7 +198,7 @@ async def get_user_roles(
     
     return role_assignment_crud.get_user_roles(db, user_id, active_only)
 
-@router.put("/users/{role_assignment_id}", response_model=RoleAssignment)
+@router.put("/roles/users/{role_assignment_id}", response_model=RoleAssignment)
 async def update_user_role(
     role_assignment_id: int,
     role_assignment_update: RoleAssignmentUpdate,
@@ -237,7 +237,7 @@ async def update_user_role(
     
     return updated_role_assignment
 
-@router.delete("/users/{role_assignment_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/roles/users/{role_assignment_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_role_from_user(
     role_assignment_id: int,
     current_user: User = Depends(get_current_admin_user),
@@ -273,7 +273,7 @@ async def remove_role_from_user(
             detail="Не удалось удалить роль у пользователя."
         )
 
-@router.get("/{role_id}/users", response_model=List[UserSchema])
+@router.get("/roles/{role_id}/users", response_model=List[UserSchema])
 async def get_users_by_role(
     role_id: int,
     skip: int = Query(0, ge=0, description="Количество пропущенных записей"),

@@ -145,8 +145,8 @@ docker-compose down
 - `PUT /admin/users/{id}/password` - Изменение пароля
 
 ### Управление ролями (только для администраторов)
-- `GET /admin/roles/` - Список всех ролей
-- `POST /admin/roles/` - Создание новой роли
+- `GET /admin/roles` - Список всех ролей
+- `POST /admin/roles` - Создание новой роли
 - `GET /admin/roles/users/{id}` - Роли пользователя
 - `GET /admin/roles/{id}/users` - Пользователи с ролью
 - `POST /admin/roles/users/assign` - Назначение роли пользователю

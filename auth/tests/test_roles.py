@@ -27,7 +27,7 @@ def test_role_management():
     
     # 2. Получение списка ролей
     print("\n2. Получение списка ролей...")
-    response = requests.get(f"{BASE_URL}/admin/roles/", headers=admin_headers)
+    response = requests.get(f"{BASE_URL}/admin/roles", headers=admin_headers)
     if response.status_code != 200:
         print(f"   Ошибка получения ролей: {response.text}")
         return
@@ -45,7 +45,7 @@ def test_role_management():
         "permissions": "read,write,moderate"
     }
     
-    response = requests.post(f"{BASE_URL}/admin/roles/", json=new_role_data, headers=admin_headers)
+    response = requests.post(f"{BASE_URL}/admin/roles", json=new_role_data, headers=admin_headers)
     if response.status_code != 200:
         print(f"   Ошибка создания роли: {response.text}")
         return
@@ -104,7 +104,7 @@ def test_role_management():
         "role_id": new_role['id']
     }
     
-    response = requests.post(f"{BASE_URL}/admin/roles/assign", json=assignment_data, headers=admin_headers)
+    response = requests.post(f"{BASE_URL}/admin/roles/users/assign", json=assignment_data, headers=admin_headers)
     if response.status_code != 200:
         print(f"   Ошибка назначения роли: {response.text}")
         return
@@ -114,7 +114,7 @@ def test_role_management():
     
     # 8. Получение ролей пользователя
     print("\n8. Получение ролей пользователя...")
-    response = requests.get(f"{BASE_URL}/admin/roles/user/{test_user['id']}", headers=admin_headers)
+    response = requests.get(f"{BASE_URL}/admin/roles/users/{test_user['id']}", headers=admin_headers)
     if response.status_code != 200:
         print(f"   Ошибка получения ролей пользователя: {response.text}")
         return
@@ -138,7 +138,7 @@ def test_role_management():
     
     # 10. Удаление назначения роли
     print("\n10. Удаление назначения роли...")
-    response = requests.delete(f"{BASE_URL}/admin/roles/assign/{assignment['id']}", headers=admin_headers)
+    response = requests.delete(f"{BASE_URL}/admin/roles/users/{assignment['id']}", headers=admin_headers)
     if response.status_code != 200:
         print(f"   Ошибка удаления назначения роли: {response.text}")
         return
@@ -147,7 +147,7 @@ def test_role_management():
     
     # 11. Проверка, что роль удалена у пользователя
     print("\n11. Проверка удаления роли...")
-    response = requests.get(f"{BASE_URL}/admin/roles/user/{test_user['id']}", headers=admin_headers)
+    response = requests.get(f"{BASE_URL}/admin/roles/users/{test_user['id']}", headers=admin_headers)
     if response.status_code != 200:
         print(f"   Ошибка получения ролей пользователя: {response.text}")
         return
