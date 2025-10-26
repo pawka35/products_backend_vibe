@@ -36,6 +36,7 @@ class OrderBase(BaseModel):
 
 class OrderCreate(BaseModel):
     products: List[ProductCreate]
+    executor_id: int  # Обязательный ID исполнителя
 
 class OrderUpdate(BaseModel):
     status: Optional[OrderStatus] = None
@@ -43,6 +44,7 @@ class OrderUpdate(BaseModel):
 class Order(OrderBase):
     id: int
     customer_id: int
+    executor_id: int
     status: OrderStatus
     created_at: datetime
     updated_at: Optional[datetime] = None
@@ -55,6 +57,7 @@ class Order(OrderBase):
 class OrderSummary(BaseModel):
     id: int
     customer_id: int
+    executor_id: int
     status: OrderStatus
     created_at: datetime
     total_products: int

@@ -31,11 +31,13 @@ class Order(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     customer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    executor_id = Column(Integer, ForeignKey("users.id"), nullable=False)  # Обязательный исполнитель
     status = Column(Enum(OrderStatus), nullable=False, default=OrderStatus.PENDING)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     completed_at = Column(DateTime(timezone=True), nullable=True)
     
     # Связи
-    customer = relationship("User", back_populates="orders")
+    customer = relationship("User", foreign_keys=[customer_id], back_populates="orders")
+    executor = relationship("User", foreign_keys=[executor_id])  # Связь с исполнителем
     products = relationship("Product", back_populates="order", cascade="all, delete-orphan")

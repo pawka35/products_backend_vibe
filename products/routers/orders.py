@@ -18,6 +18,8 @@ from products.crud import (
     update_order_status,
     get_order_summary
 )
+from auth.crud import get_user, get_users_by_role
+from auth.schemas import UserList
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -38,6 +40,7 @@ async def create_new_order(
 ):
     """
     Создание нового заказа (только для заказчиков)
+    Требует обязательного указания исполнителя с ролью EXECUTOR
     """
     if not order.products:
         raise HTTPException(
@@ -45,8 +48,48 @@ async def create_new_order(
             detail="Заказ должен содержать хотя бы один продукт"
         )
     
+    # Проверяем, что указанный исполнитель существует и имеет роль EXECUTOR
+    executor = get_user(db, order.executor_id)
+    if not executor:
+        raise HTTPException(
+            status_code=404,
+            detail="Исполнитель не найден"
+        )
+    
+    if executor.role != UserRole.EXECUTOR:
+        raise HTTPException(
+            status_code=400,
+            detail="Указанный пользователь не является исполнителем"
+        )
+    
+    if not executor.is_active:
+        raise HTTPException(
+            status_code=400,
+            detail="Указанный исполнитель неактивен"
+        )
+    
+    # Проверяем, что заказчик не назначает заказ самому себе
+    if order.executor_id == current_user.id:
+        raise HTTPException(
+            status_code=400,
+            detail="Нельзя назначить заказ самому себе"
+        )
+    
     db_order = create_order(db, order, current_user.id)
     return db_order
+
+@router.get("/executors", response_model=List[UserList])
+async def get_available_executors(
+    current_user: UserModel = Depends(require_customer),
+    db: Session = Depends(get_db)
+):
+    """
+    Получение списка доступных исполнителей (только для заказчиков)
+    """
+    executors = get_users_by_role(db, UserRole.EXECUTOR)
+    # Фильтруем только активных исполнителей
+    active_executors = [executor for executor in executors if executor.is_active]
+    return active_executors
 
 @router.get("/", response_model=List[OrderSummary])
 async def get_my_orders(

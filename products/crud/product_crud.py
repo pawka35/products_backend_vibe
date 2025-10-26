@@ -5,8 +5,11 @@ from datetime import datetime
 
 # CRUD операции для заказов
 def create_order(db: Session, order: OrderCreate, customer_id: int):
-    """Создание нового заказа"""
-    db_order = Order(customer_id=customer_id)
+    """Создание нового заказа с обязательным исполнителем"""
+    db_order = Order(
+        customer_id=customer_id,
+        executor_id=order.executor_id
+    )
     db.add(db_order)
     db.commit()
     db.refresh(db_order)
@@ -30,8 +33,12 @@ def get_order(db: Session, order_id: int):
     return db.query(Order).filter(Order.id == order_id).first()
 
 def get_user_orders(db: Session, user_id: int, skip: int = 0, limit: int = 100):
-    """Получение заказов пользователя"""
+    """Получение заказов пользователя (как заказчика)"""
     return db.query(Order).filter(Order.customer_id == user_id).offset(skip).limit(limit).all()
+
+def get_executor_orders(db: Session, executor_id: int, skip: int = 0, limit: int = 100):
+    """Получение заказов исполнителя"""
+    return db.query(Order).filter(Order.executor_id == executor_id).offset(skip).limit(limit).all()
 
 def get_all_orders(db: Session, skip: int = 0, limit: int = 100):
     """Получение всех заказов (для исполнителей)"""
@@ -103,6 +110,7 @@ def get_order_summary(db: Session, order_id: int):
     return {
         "id": order.id,
         "customer_id": order.customer_id,
+        "executor_id": order.executor_id,
         "status": order.status,
         "created_at": order.created_at,
         "total_products": total_products,

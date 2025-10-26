@@ -200,7 +200,7 @@ class MaxiRetailSearchService:
             'id': product.get('id', None),
             'name': product.get('name', ''),
             'price': product.get('price', None),
-            'image': product.get('image', None),
+            'image': product.get('image_url', None),
             'url': product.get('url', None),
             'description': product.get('description', ''),
             'search_query': query,

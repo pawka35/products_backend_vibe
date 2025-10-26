@@ -22,7 +22,7 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Связи
-    orders = relationship("Order", back_populates="customer")
+    orders = relationship("Order", foreign_keys="Order.customer_id", back_populates="customer")
     search_history = relationship("SearchHistory", back_populates="user")
     
     # Связь с ролями (упрощенная)
