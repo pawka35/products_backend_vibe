@@ -231,9 +231,50 @@ async def mark_product_purchased(
     # Обновляем статус продукта
     updated_product = update_product_purchase_status(db, product_id, purchase_data, current_user.id)
     
-    # Проверяем, можно ли завершить заказ
-    if check_order_completion(db, product.order_id):
-        update_order_status(db, product.order_id, OrderStatus.COMPLETED)
+    # Возвращаем обновленный заказ
+    return get_order(db, product.order_id)
+
+@router.put("/products/{product_id}/unpurchase", response_model=OrderSchema)
+async def unmark_product_purchased(
+    product_id: int,
+    current_user: UserModel = Depends(require_executor),
+    db: Session = Depends(get_db)
+):
+    """
+    Снять пометку "куплен" с продукта (только для исполнителей)
+    """
+    from products.crud import get_product
+    
+    product = get_product(db, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Продукт не найден")
+    
+    # Проверяем, что заказ активен и исполнитель имеет доступ
+    order = get_order(db, product.order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Заказ не найден")
+    
+    # Проверяем, что текущий пользователь назначен исполнителем этого заказа
+    if order.executor_id != current_user.id:
+        raise HTTPException(
+            status_code=403, 
+            detail="Доступ запрещен. Вы не назначены исполнителем этого заказа"
+        )
+    
+    if order.status not in [OrderStatus.PENDING, OrderStatus.IN_PROGRESS]:
+        raise HTTPException(
+            status_code=400, 
+            detail="Можно работать только с активными заказами"
+        )
+    
+    # Создаем данные для снятия пометки
+    unpurchase_data = ProductPurchase(
+        is_purchased=False,
+        notes="Пометка 'куплен' снята"
+    )
+    
+    # Обновляем статус продукта
+    updated_product = update_product_purchase_status(db, product_id, unpurchase_data, current_user.id)
     
     # Возвращаем обновленный заказ
     return get_order(db, product.order_id)
