@@ -4,7 +4,8 @@ from .product_crud import (
     get_product, check_order_completion, get_order_summary,
     get_all_orders_with_filters, get_orders_count_with_filters,
     get_user_orders_with_filters, get_user_orders_count_with_filters,
-    get_executor_orders_with_filters, get_executor_orders_count_with_filters
+    get_executor_orders_with_filters, get_executor_orders_count_with_filters,
+    get_all_orders_with_users_and_filters
 )
 from .search_crud import (
     create_search_record, get_user_search_history, get_search_statistics,
@@ -18,6 +19,7 @@ __all__ = [
     "get_all_orders_with_filters", "get_orders_count_with_filters",
     "get_user_orders_with_filters", "get_user_orders_count_with_filters",
     "get_executor_orders_with_filters", "get_executor_orders_count_with_filters",
+    "get_all_orders_with_users_and_filters",
     "create_search_record", "get_user_search_history", "get_search_statistics",
     "delete_search_record", "clear_user_search_history"
 ]

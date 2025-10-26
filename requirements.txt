@@ -12,3 +12,6 @@ requests==2.31.0
 beautifulsoup4==4.12.2
 lxml==4.9.3
 aiohttp==3.9.1
+slowapi==0.1.9
+redis==5.0.1
+psutil==5.9.6

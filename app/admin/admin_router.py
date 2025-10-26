@@ -23,7 +23,8 @@ from app.schemas import (
 from products.crud import (
     get_all_orders_with_filters,
     get_orders_count_with_filters,
-    get_order_summary
+    get_order_summary,
+    get_all_orders_with_users_and_filters
 )
 from products.schemas import (
     OrdersListResponse,
@@ -211,8 +212,8 @@ async def admin_get_all_orders(
     # Вычисляем offset для пагинации
     skip = (page - 1) * per_page
     
-    # Получаем заказы с фильтрами
-    orders = get_all_orders_with_filters(
+    # Получаем заказы с фильтрами (оптимизированная версия с предзагруженными пользователями)
+    orders = get_all_orders_with_users_and_filters(
         db=db,
         skip=skip,
         limit=per_page,
@@ -241,9 +242,9 @@ async def admin_get_all_orders(
     # Формируем детальную информацию о заказах
     orders_with_details = []
     for order in orders:
-        # Получаем информацию о заказчике и исполнителе
-        customer = get_user(db, order.customer_id)
-        executor = get_user(db, order.executor_id)
+        # Пользователи уже предзагружены через joinedload
+        customer = order.customer
+        executor = order.executor
         
         # Получаем сводку по заказу
         summary = get_order_summary(db, order.id)

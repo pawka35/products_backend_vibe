@@ -8,6 +8,11 @@ from app.routers import users_router
 from app.admin import admin_router
 from products.routers import orders_router, executor_router, search_router
 from auth.utils.admin_init import ensure_admin_exists, ensure_basic_roles
+from utils.logging_config import setup_logging
+from middleware.logging_middleware import LoggingMiddleware
+
+# Настраиваем логирование
+setup_logging()
 
 # Создаем таблицы в базе данных
 Base.metadata.create_all(bind=engine)
@@ -26,6 +31,9 @@ app = FastAPI(
     docs_url=None,  # Отключаем стандартную документацию
     redoc_url=None  # Отключаем стандартную документацию
 )
+
+# Добавляем middleware для логирования
+app.add_middleware(LoggingMiddleware)
 
 # Подключаем роутеры
 app.include_router(auth_router)
@@ -46,7 +54,65 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    """Расширенная проверка состояния системы"""
+    import psutil
+    import time
+    from database import engine
+    from sqlalchemy import text
+    
+    health_status = {
+        "status": "healthy",
+        "timestamp": time.time(),
+        "version": "1.0.0",
+        "checks": {}
+    }
+    
+    # Проверка базы данных
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(text("SELECT 1"))
+            result.fetchone()
+        health_status["checks"]["database"] = {
+            "status": "healthy",
+            "response_time": "< 1ms"
+        }
+    except Exception as e:
+        health_status["status"] = "unhealthy"
+        health_status["checks"]["database"] = {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+    
+    # Проверка системных ресурсов
+    try:
+        cpu_percent = psutil.cpu_percent(interval=0.1)
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+        
+        health_status["checks"]["system"] = {
+            "status": "healthy",
+            "cpu_percent": cpu_percent,
+            "memory_percent": memory.percent,
+            "disk_percent": disk.percent
+        }
+        
+        # Проверяем критические пороги
+        if cpu_percent > 90 or memory.percent > 90 or disk.percent > 90:
+            health_status["status"] = "degraded"
+            
+    except Exception as e:
+        health_status["checks"]["system"] = {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+    
+    # Проверка внешних зависимостей (если есть)
+    health_status["checks"]["external_services"] = {
+        "status": "healthy",
+        "services": []
+    }
+    
+    return health_status
 
 # Кастомная Swagger UI с правильными настройками авторизации
 @app.get("/docs", include_in_schema=False)

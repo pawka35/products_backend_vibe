@@ -1,6 +1,7 @@
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, validator, Field
 from typing import Optional
 from auth.models import UserRole
+from auth.validators import validate_password_strength
 from datetime import datetime
 
 class UserBase(BaseModel):
@@ -15,7 +16,14 @@ class UserBase(BaseModel):
         return v
 
 class UserCreate(UserBase):
-    password: str
+    password: str = Field(..., min_length=8, max_length=128, description="Пароль должен содержать минимум 8 символов")
+    
+    @validator('password')
+    def validate_password(cls, v):
+        is_valid, error_message = validate_password_strength(v)
+        if not is_valid:
+            raise ValueError(error_message)
+        return v
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None
@@ -72,3 +80,15 @@ class UserList(BaseModel):
 
     class Config:
         from_attributes = True
+
+class PasswordChange(BaseModel):
+    """Схема для изменения пароля"""
+    current_password: str = Field(..., description="Текущий пароль")
+    new_password: str = Field(..., min_length=8, max_length=128, description="Новый пароль")
+    
+    @validator('new_password')
+    def validate_new_password(cls, v):
+        is_valid, error_message = validate_password_strength(v)
+        if not is_valid:
+            raise ValueError(error_message)
+        return v

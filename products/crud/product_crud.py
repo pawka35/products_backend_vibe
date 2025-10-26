@@ -1,9 +1,9 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, desc
 from products.models import Product, Order, OrderStatus
 from products.schemas import ProductCreate, OrderCreate, ProductPurchase
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Dict
 
 # CRUD операции для заказов
 def create_order(db: Session, order: OrderCreate, customer_id: int):
@@ -123,6 +123,48 @@ def get_user_orders_count_with_filters(
     
     return query.count()
 
+def get_all_orders_with_users_and_filters(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+    executor_id: Optional[int] = None,
+    customer_id: Optional[int] = None,
+    date_from: Optional[datetime] = None,
+    date_to: Optional[datetime] = None,
+    status: Optional[OrderStatus] = None
+):
+    """
+    Получение всех заказов с фильтрами и предзагруженными пользователями (оптимизированная версия)
+    """
+    from auth.models import User
+    
+    query = db.query(Order).options(
+        joinedload(Order.customer),
+        joinedload(Order.executor),
+        joinedload(Order.products)
+    )
+
+    # Применяем фильтры
+    if executor_id is not None:
+        query = query.filter(Order.executor_id == executor_id)
+
+    if customer_id is not None:
+        query = query.filter(Order.customer_id == customer_id)
+
+    if date_from is not None:
+        query = query.filter(Order.created_at >= date_from)
+
+    if date_to is not None:
+        query = query.filter(Order.created_at <= date_to)
+
+    if status is not None:
+        query = query.filter(Order.status == status)
+
+    # Сортируем по дате создания (новые сначала)
+    query = query.order_by(desc(Order.created_at))
+
+    return query.offset(skip).limit(limit).all()
+
 def get_executor_orders(db: Session, executor_id: int, skip: int = 0, limit: int = 100):
     """Получение заказов исполнителя"""
     return db.query(Order).filter(Order.executor_id == executor_id).offset(skip).limit(limit).all()
@@ -211,6 +253,48 @@ def get_executor_orders_count_with_filters(
         query = query.filter(Order.status == status)
     
     return query.count()
+
+def get_all_orders_with_users_and_filters(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+    executor_id: Optional[int] = None,
+    customer_id: Optional[int] = None,
+    date_from: Optional[datetime] = None,
+    date_to: Optional[datetime] = None,
+    status: Optional[OrderStatus] = None
+):
+    """
+    Получение всех заказов с фильтрами и предзагруженными пользователями (оптимизированная версия)
+    """
+    from auth.models import User
+    
+    query = db.query(Order).options(
+        joinedload(Order.customer),
+        joinedload(Order.executor),
+        joinedload(Order.products)
+    )
+
+    # Применяем фильтры
+    if executor_id is not None:
+        query = query.filter(Order.executor_id == executor_id)
+
+    if customer_id is not None:
+        query = query.filter(Order.customer_id == customer_id)
+
+    if date_from is not None:
+        query = query.filter(Order.created_at >= date_from)
+
+    if date_to is not None:
+        query = query.filter(Order.created_at <= date_to)
+
+    if status is not None:
+        query = query.filter(Order.status == status)
+
+    # Сортируем по дате создания (новые сначала)
+    query = query.order_by(desc(Order.created_at))
+
+    return query.offset(skip).limit(limit).all()
 
 def get_all_orders(db: Session, skip: int = 0, limit: int = 100):
     """Получение всех заказов (для исполнителей)"""
@@ -381,3 +465,45 @@ def get_orders_count_with_filters(
         query = query.filter(Order.status == status)
     
     return query.count()
+
+def get_all_orders_with_users_and_filters(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+    executor_id: Optional[int] = None,
+    customer_id: Optional[int] = None,
+    date_from: Optional[datetime] = None,
+    date_to: Optional[datetime] = None,
+    status: Optional[OrderStatus] = None
+):
+    """
+    Получение всех заказов с фильтрами и предзагруженными пользователями (оптимизированная версия)
+    """
+    from auth.models import User
+    
+    query = db.query(Order).options(
+        joinedload(Order.customer),
+        joinedload(Order.executor),
+        joinedload(Order.products)
+    )
+
+    # Применяем фильтры
+    if executor_id is not None:
+        query = query.filter(Order.executor_id == executor_id)
+
+    if customer_id is not None:
+        query = query.filter(Order.customer_id == customer_id)
+
+    if date_from is not None:
+        query = query.filter(Order.created_at >= date_from)
+
+    if date_to is not None:
+        query = query.filter(Order.created_at <= date_to)
+
+    if status is not None:
+        query = query.filter(Order.status == status)
+
+    # Сортируем по дате создания (новые сначала)
+    query = query.order_by(desc(Order.created_at))
+
+    return query.offset(skip).limit(limit).all()
