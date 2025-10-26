@@ -25,7 +25,7 @@ from products.crud import (
 from auth.crud import get_user, get_users_by_role
 from auth.schemas import UserList
 
-router = APIRouter(prefix="/orders", tags=["orders"])
+router = APIRouter(prefix="/customer", tags=["customer"])
 
 def require_customer(current_user: UserModel = Depends(get_current_active_user)):
     """Проверка, что пользователь является заказчиком"""
@@ -36,7 +36,7 @@ def require_customer(current_user: UserModel = Depends(get_current_active_user))
         )
     return current_user
 
-@router.post("/", response_model=OrderSchema)
+@router.post("/orders", response_model=OrderSchema)
 async def create_new_order(
     order: OrderCreate,
     current_user: UserModel = Depends(require_customer),
@@ -82,7 +82,7 @@ async def create_new_order(
     db_order = create_order(db, order, current_user.id)
     return db_order
 
-@router.get("/executors", response_model=List[UserList])
+@router.get("/orders/executors", response_model=List[UserList])
 async def get_available_executors(
     current_user: UserModel = Depends(require_customer),
     db: Session = Depends(get_db)
@@ -91,11 +91,10 @@ async def get_available_executors(
     Получение списка доступных исполнителей (только для заказчиков)
     """
     executors = get_users_by_role(db, UserRole.EXECUTOR)
-    # Фильтруем только активных исполнителей
     active_executors = [executor for executor in executors if executor.is_active]
     return active_executors
 
-@router.get("/", response_model=UserOrdersListResponse)
+@router.get("/orders", response_model=UserOrdersListResponse)
 async def get_my_orders(
     page: int = Query(1, ge=1, description="Номер страницы"),
     per_page: int = Query(20, ge=1, le=100, description="Количество записей на странице"),
@@ -168,7 +167,7 @@ async def get_my_orders(
         has_prev=has_prev
     )
 
-@router.get("/{order_id}", response_model=OrderSchema)
+@router.get("/orders/{order_id}", response_model=OrderSchema)
 async def get_my_order(
     order_id: int,
     current_user: UserModel = Depends(require_customer),
@@ -189,7 +188,7 @@ async def get_my_order(
     
     return order
 
-@router.get("/{order_id}/summary", response_model=OrderSummary)
+@router.get("/orders/{order_id}/summary", response_model=OrderSummary)
 async def get_order_summary_endpoint(
     order_id: int,
     current_user: UserModel = Depends(require_customer),
@@ -213,31 +212,3 @@ async def get_order_summary_endpoint(
         raise HTTPException(status_code=404, detail="Сводка не найдена")
     
     return summary
-
-@router.put("/{order_id}/cancel", response_model=OrderSchema)
-async def cancel_order(
-    order_id: int,
-    current_user: UserModel = Depends(require_customer),
-    db: Session = Depends(get_db)
-):
-    """
-    Отмена заказа (только для заказчиков, только свои заказы)
-    """
-    order = get_order(db, order_id)
-    if not order:
-        raise HTTPException(status_code=404, detail="Заказ не найден")
-    
-    if order.customer_id != current_user.id:
-        raise HTTPException(
-            status_code=403, 
-            detail="Доступ только к своим заказам"
-        )
-    
-    if order.status in [OrderStatus.COMPLETED, OrderStatus.CANCELLED]:
-        raise HTTPException(
-            status_code=400, 
-            detail="Нельзя отменить завершенный или отмененный заказ"
-        )
-    
-    updated_order = update_order_status(db, order_id, OrderStatus.CANCELLED)
-    return updated_order
