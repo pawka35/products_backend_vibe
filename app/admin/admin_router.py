@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+from datetime import datetime
 from database import get_db
 from auth.models import User as UserModel, UserRole
 from auth.schemas import UserResponse, UserList
@@ -19,6 +20,16 @@ from app.schemas import (
     UserStatistics,
     BulkUserOperation
 )
+from products.crud import (
+    get_all_orders_with_filters,
+    get_orders_count_with_filters,
+    get_order_summary
+)
+from products.schemas import (
+    OrdersListResponse,
+    OrderWithDetails
+)
+from products.models import OrderStatus
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -167,4 +178,115 @@ async def admin_bulk_change_role(
     raise HTTPException(
         status_code=400, 
         detail="Неподдерживаемая операция"
+    )
+
+@router.get("/orders", response_model=OrdersListResponse)
+async def admin_get_all_orders(
+    page: int = Query(1, ge=1, description="Номер страницы"),
+    per_page: int = Query(20, ge=1, le=100, description="Количество записей на странице"),
+    executor_id: Optional[int] = Query(None, description="Фильтр по ID исполнителя"),
+    customer_id: Optional[int] = Query(None, description="Фильтр по ID заказчика"),
+    date_from: Optional[datetime] = Query(None, description="Фильтр по дате создания (от)"),
+    date_to: Optional[datetime] = Query(None, description="Фильтр по дате создания (до)"),
+    status: Optional[OrderStatus] = Query(
+        None, 
+        description="Фильтр по статусу заказа",
+        enum=[OrderStatus.PENDING, OrderStatus.IN_PROGRESS, OrderStatus.COMPLETED, OrderStatus.CANCELLED]
+    ),
+    current_user: UserModel = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Получение всех заказов с фильтрами (только для администраторов)
+    
+    Фильтры:
+    - executor_id: Поиск заказов конкретного исполнителя
+    - customer_id: Поиск заказов конкретного заказчика
+    - date_from: Заказы созданные с указанной даты
+    - date_to: Заказы созданные до указанной даты
+    - status: Фильтр по статусу заказа (pending, in_progress, completed, cancelled)
+    
+    Поддерживается пагинация.
+    """
+    # Вычисляем offset для пагинации
+    skip = (page - 1) * per_page
+    
+    # Получаем заказы с фильтрами
+    orders = get_all_orders_with_filters(
+        db=db,
+        skip=skip,
+        limit=per_page,
+        executor_id=executor_id,
+        customer_id=customer_id,
+        date_from=date_from,
+        date_to=date_to,
+        status=status
+    )
+    
+    # Получаем общее количество заказов с теми же фильтрами
+    total_count = get_orders_count_with_filters(
+        db=db,
+        executor_id=executor_id,
+        customer_id=customer_id,
+        date_from=date_from,
+        date_to=date_to,
+        status=status
+    )
+    
+    # Вычисляем пагинацию
+    total_pages = (total_count + per_page - 1) // per_page
+    has_next = page < total_pages
+    has_prev = page > 1
+    
+    # Формируем детальную информацию о заказах
+    orders_with_details = []
+    for order in orders:
+        # Получаем информацию о заказчике и исполнителе
+        customer = get_user(db, order.customer_id)
+        executor = get_user(db, order.executor_id)
+        
+        # Получаем сводку по заказу
+        summary = get_order_summary(db, order.id)
+        
+        # Преобразуем продукты в словари
+        products_data = []
+        for product in order.products:
+            product_dict = {
+                "id": product.id,
+                "name": product.name,
+                "quantity": product.quantity,
+                "notes": product.notes,
+                "is_purchased": product.is_purchased,
+                "purchased_at": product.purchased_at.isoformat() if product.purchased_at else None,
+                "purchased_by": product.purchased_by,
+                "order_id": product.order_id
+            }
+            products_data.append(product_dict)
+        
+        # Создаем детальную информацию о заказе
+        order_detail = {
+            "id": order.id,
+            "customer_id": order.customer_id,
+            "executor_id": order.executor_id,
+            "status": order.status.value,  # Преобразуем enum в строку
+            "created_at": order.created_at.isoformat() if order.created_at else None,  # Преобразуем datetime в строку
+            "updated_at": order.updated_at.isoformat() if order.updated_at else None,
+            "completed_at": order.completed_at.isoformat() if order.completed_at else None,
+            "products": products_data,
+            "customer_username": customer.username if customer else None,
+            "executor_username": executor.username if executor else None,
+            "total_products": summary["total_products"] if summary else 0,
+            "purchased_products": summary["purchased_products"] if summary else 0,
+            "is_completable": summary["is_completable"] if summary else False
+        }
+        orders_with_details.append(order_detail)
+    
+    return OrdersListResponse(
+        orders=orders_with_details,
+        total_count=total_count,
+        page=page,
+        per_page=per_page,
+        total_pages=total_pages,
+        has_next=has_next,
+        has_prev=has_prev
     )
