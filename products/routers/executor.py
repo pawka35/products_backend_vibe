@@ -119,15 +119,19 @@ async def get_order_details(
 ):
     """
     Получение деталей заказа (только для исполнителей)
+    
+    Исполнитель может просматривать заказы в любом статусе, 
+    но только те, где он назначен исполнителем.
     """
     order = get_order(db, order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Заказ не найден")
     
-    if order.status not in [OrderStatus.PENDING, OrderStatus.IN_PROGRESS]:
+    # Проверяем, что текущий пользователь назначен исполнителем этого заказа
+    if order.executor_id != current_user.id:
         raise HTTPException(
-            status_code=400, 
-            detail="Можно работать только с активными заказами"
+            status_code=403, 
+            detail="Доступ запрещен. Вы не назначены исполнителем этого заказа"
         )
     
     return order
@@ -140,10 +144,20 @@ async def get_order_summary_executor(
 ):
     """
     Получение сводки по заказу (только для исполнителей)
+    
+    Исполнитель может просматривать сводки заказов в любом статусе, 
+    но только тех, где он назначен исполнителем.
     """
     order = get_order(db, order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Заказ не найден")
+    
+    # Проверяем, что текущий пользователь назначен исполнителем этого заказа
+    if order.executor_id != current_user.id:
+        raise HTTPException(
+            status_code=403, 
+            detail="Доступ запрещен. Вы не назначены исполнителем этого заказа"
+        )
     
     summary = get_order_summary(db, order_id)
     if not summary:
@@ -163,6 +177,13 @@ async def start_order_execution(
     order = get_order(db, order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Заказ не найден")
+    
+    # Проверяем, что текущий пользователь назначен исполнителем этого заказа
+    if order.executor_id != current_user.id:
+        raise HTTPException(
+            status_code=403, 
+            detail="Доступ запрещен. Вы не назначены исполнителем этого заказа"
+        )
     
     if order.status != OrderStatus.PENDING:
         raise HTTPException(
@@ -189,9 +210,19 @@ async def mark_product_purchased(
     if not product:
         raise HTTPException(status_code=404, detail="Продукт не найден")
     
-    # Проверяем, что заказ активен
+    # Проверяем, что заказ активен и исполнитель имеет доступ
     order = get_order(db, product.order_id)
-    if not order or order.status not in [OrderStatus.PENDING, OrderStatus.IN_PROGRESS]:
+    if not order:
+        raise HTTPException(status_code=404, detail="Заказ не найден")
+    
+    # Проверяем, что текущий пользователь назначен исполнителем этого заказа
+    if order.executor_id != current_user.id:
+        raise HTTPException(
+            status_code=403, 
+            detail="Доступ запрещен. Вы не назначены исполнителем этого заказа"
+        )
+    
+    if order.status not in [OrderStatus.PENDING, OrderStatus.IN_PROGRESS]:
         raise HTTPException(
             status_code=400, 
             detail="Можно работать только с активными заказами"
@@ -220,6 +251,13 @@ async def complete_order(
     if not order:
         raise HTTPException(status_code=404, detail="Заказ не найден")
     
+    # Проверяем, что текущий пользователь назначен исполнителем этого заказа
+    if order.executor_id != current_user.id:
+        raise HTTPException(
+            status_code=403, 
+            detail="Доступ запрещен. Вы не назначены исполнителем этого заказа"
+        )
+    
     if order.status not in [OrderStatus.PENDING, OrderStatus.IN_PROGRESS]:
         raise HTTPException(
             status_code=400, 
@@ -246,8 +284,18 @@ async def get_orders_by_status_executor(
 ):
     """
     Получение заказов по статусу (только для исполнителей)
+    
+    Исполнитель видит только заказы с указанным статусом, 
+    где он назначен исполнителем.
     """
-    orders = get_orders_by_status(db, status, skip, limit)
+    # Используем функцию с фильтрами, чтобы получить только заказы исполнителя
+    orders = get_executor_orders_with_filters(
+        db=db,
+        executor_id=current_user.id,
+        skip=skip,
+        limit=limit,
+        status=status
+    )
     
     order_summaries = []
     for order in orders:
