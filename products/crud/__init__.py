@@ -1,6 +1,6 @@
 from .product_crud import (
     create_order, get_order, get_user_orders, get_all_orders,
-    get_orders_by_status, update_order_status, update_product_purchase_status,
+    get_orders_by_status, update_order_status, update_order, update_product_purchase_status,
     get_product, check_order_completion, get_order_summary,
     get_all_orders_with_filters, get_orders_count_with_filters,
     get_user_orders_with_filters, get_user_orders_count_with_filters,
@@ -14,7 +14,7 @@ from .search_crud import (
 
 __all__ = [
     "create_order", "get_order", "get_user_orders", "get_all_orders",
-    "get_orders_by_status", "update_order_status", "update_product_purchase_status",
+    "get_orders_by_status", "update_order_status", "update_order", "update_product_purchase_status",
     "get_product", "check_order_completion", "get_order_summary",
     "get_all_orders_with_filters", "get_orders_count_with_filters",
     "get_user_orders_with_filters", "get_user_orders_count_with_filters",

@@ -1,6 +1,6 @@
 from .product_schemas import (
     ProductBase, ProductCreate, ProductUpdate, Product, ProductPurchase,
-    OrderBase, OrderCreate, OrderUpdate, Order, OrderSummary, OrderStatusUpdate,
+    OrderBase, OrderCreate, OrderUpdate, Order, OrderSummary, OrderStatusUpdate, OrderEdit,
     OrderFilters, OrderWithDetails, OrdersListResponse, UserOrdersListResponse, ExecutorOrdersListResponse
 )
 from .search_schemas import (
@@ -9,7 +9,7 @@ from .search_schemas import (
 
 __all__ = [
     "ProductBase", "ProductCreate", "ProductUpdate", "Product", "ProductPurchase",
-    "OrderBase", "OrderCreate", "OrderUpdate", "Order", "OrderSummary", "OrderStatusUpdate",
+    "OrderBase", "OrderCreate", "OrderUpdate", "Order", "OrderSummary", "OrderStatusUpdate", "OrderEdit",
     "OrderFilters", "OrderWithDetails", "OrdersListResponse", "UserOrdersListResponse", "ExecutorOrdersListResponse",
     "ProductSearchRequest", "ExternalProduct", "ProductSearchResponse", "PaginationInfo"
 ]

@@ -70,6 +70,11 @@ class OrderSummary(BaseModel):
 class OrderStatusUpdate(BaseModel):
     status: OrderStatus
 
+class OrderEdit(BaseModel):
+    """Схема для редактирования заказа заказчиком"""
+    products: Optional[List[ProductCreate]] = None
+    executor_id: Optional[int] = None
+
 # Схемы для административных операций с заказами
 class OrderFilters(BaseModel):
     """Схема фильтров для поиска заказов"""

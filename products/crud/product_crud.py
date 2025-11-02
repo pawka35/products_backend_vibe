@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, desc
 from products.models import Product, Order, OrderStatus
-from products.schemas import ProductCreate, OrderCreate, ProductPurchase
+from products.schemas import ProductCreate, OrderCreate, ProductPurchase, OrderEdit
 from datetime import datetime
 from typing import Optional, List, Dict
 
@@ -313,6 +313,43 @@ def update_order_status(db: Session, order_id: int, status: OrderStatus):
     db_order.status = status
     if status == OrderStatus.COMPLETED:
         db_order.completed_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(db_order)
+    return db_order
+
+def update_order(db: Session, order_id: int, order_edit: OrderEdit):
+    """
+    Обновление заказа заказчиком
+    
+    Можно изменить:
+    - Исполнителя (executor_id)
+    - Список продуктов (products)
+    
+    При обновлении продуктов старые продукты удаляются и создаются новые.
+    """
+    db_order = get_order(db, order_id)
+    if not db_order:
+        return None
+    
+    # Обновляем исполнителя, если указан
+    if order_edit.executor_id is not None:
+        db_order.executor_id = order_edit.executor_id
+    
+    # Обновляем продукты, если указаны
+    if order_edit.products is not None:
+        # Удаляем все старые продукты заказа
+        db.query(Product).filter(Product.order_id == order_id).delete()
+        
+        # Создаем новые продукты
+        for product_data in order_edit.products:
+            db_product = Product(
+                name=product_data.name,
+                quantity=product_data.quantity,
+                notes=product_data.notes,
+                order_id=order_id
+            )
+            db.add(db_product)
     
     db.commit()
     db.refresh(db_order)

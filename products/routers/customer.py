@@ -10,7 +10,8 @@ from products.schemas import (
     Order as OrderSchema, 
     OrderSummary,
     OrderStatusUpdate,
-    UserOrdersListResponse
+    UserOrdersListResponse,
+    OrderEdit
 )
 from auth.utils import get_current_active_user
 from products.crud import (
@@ -20,7 +21,8 @@ from products.crud import (
     update_order_status,
     get_order_summary,
     get_user_orders_with_filters,
-    get_user_orders_count_with_filters
+    get_user_orders_count_with_filters,
+    update_order
 )
 from auth.crud import get_user, get_users_by_role
 from auth.schemas import UserList
@@ -212,3 +214,95 @@ async def get_order_summary_endpoint(
         raise HTTPException(status_code=404, detail="Сводка не найдена")
     
     return summary
+
+@router.put("/orders/{order_id}", response_model=OrderSchema)
+async def edit_order(
+    order_id: int,
+    order_edit: OrderEdit,
+    current_user: UserModel = Depends(require_customer),
+    db: Session = Depends(get_db)
+):
+    """
+    Редактирование заказа (только для заказчиков, только свои заказы)
+    
+    Можно редактировать только заказы со статусом PENDING (новые заказы).
+    Заказы в работе (IN_PROGRESS), выполненные (COMPLETED) и отмененные (CANCELLED) 
+    редактировать нельзя.
+    
+    Можно изменить:
+    - Исполнителя (executor_id)
+    - Список продуктов (products)
+    
+    При обновлении продуктов все старые продукты удаляются и создаются новые.
+    """
+    # Проверяем, что заказ существует
+    order = get_order(db, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Заказ не найден")
+    
+    # Проверяем, что заказ принадлежит текущему пользователю
+    if order.customer_id != current_user.id:
+        raise HTTPException(
+            status_code=403, 
+            detail="Доступ только к своим заказам"
+        )
+    
+    # Проверяем, что заказ можно редактировать (только PENDING)
+    if order.status != OrderStatus.PENDING:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Редактировать можно только новые заказы (статус: pending). Текущий статус: {order.status.value}"
+        )
+    
+    # Проверяем, что указано хотя бы одно поле для изменения
+    if order_edit.executor_id is None and order_edit.products is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Необходимо указать хотя бы одно поле для изменения (executor_id или products)"
+        )
+    
+    # Если указан новый исполнитель, проверяем его
+    if order_edit.executor_id is not None:
+        executor = get_user(db, order_edit.executor_id)
+        if not executor:
+            raise HTTPException(
+                status_code=404,
+                detail="Исполнитель не найден"
+            )
+        
+        if executor.role != UserRole.EXECUTOR:
+            raise HTTPException(
+                status_code=400,
+                detail="Указанный пользователь не является исполнителем"
+            )
+        
+        if not executor.is_active:
+            raise HTTPException(
+                status_code=400,
+                detail="Указанный исполнитель неактивен"
+            )
+        
+        # Проверяем, что заказчик не назначает заказ самому себе
+        if order_edit.executor_id == current_user.id:
+            raise HTTPException(
+                status_code=400,
+                detail="Нельзя назначить заказ самому себе"
+            )
+    
+    # Если указаны продукты, проверяем, что список не пустой
+    if order_edit.products is not None:
+        if not order_edit.products:
+            raise HTTPException(
+                status_code=400,
+                detail="Заказ должен содержать хотя бы один продукт"
+            )
+    
+    # Обновляем заказ
+    updated_order = update_order(db, order_id, order_edit)
+    if not updated_order:
+        raise HTTPException(
+            status_code=500,
+            detail="Ошибка при обновлении заказа"
+        )
+    
+    return updated_order
