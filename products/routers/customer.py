@@ -22,7 +22,8 @@ from products.crud import (
     get_order_summary,
     get_user_orders_with_filters,
     get_user_orders_count_with_filters,
-    update_order
+    update_order,
+    copy_order
 )
 from auth.crud import get_user, get_users_by_role
 from auth.schemas import UserList
@@ -306,3 +307,49 @@ async def edit_order(
         )
     
     return updated_order
+
+@router.post("/orders/{order_id}/copy", response_model=OrderSchema)
+async def copy_order_endpoint(
+    order_id: int,
+    current_user: UserModel = Depends(require_customer),
+    db: Session = Depends(get_db)
+):
+    """
+    Копирование заказа (только для заказчиков, только свои заказы)
+    
+    Создает новый заказ на основе существующего с:
+    - Тем же исполнителем
+    - Теми же продуктами (все продукты со статусом "не куплен")
+    - Статусом PENDING (новый заказ)
+    
+    Можно копировать только заказы, которые НЕ находятся в статусе PENDING (новый).
+    То есть можно копировать заказы в статусах: IN_PROGRESS, COMPLETED, CANCELLED.
+    """
+    # Проверяем, что заказ существует
+    original_order = get_order(db, order_id)
+    if not original_order:
+        raise HTTPException(status_code=404, detail="Заказ не найден")
+    
+    # Проверяем, что заказ принадлежит текущему пользователю
+    if original_order.customer_id != current_user.id:
+        raise HTTPException(
+            status_code=403, 
+            detail="Доступ только к своим заказам"
+        )
+    
+    # Проверяем, что заказ не в статусе PENDING (новый)
+    if original_order.status == OrderStatus.PENDING:
+        raise HTTPException(
+            status_code=400,
+            detail="Нельзя копировать новый заказ (статус: pending). Копировать можно только заказы, которые были взяты в работу, выполнены или отменены."
+        )
+    
+    # Копируем заказ
+    copied_order = copy_order(db, order_id, current_user.id)
+    if not copied_order:
+        raise HTTPException(
+            status_code=500,
+            detail="Ошибка при копировании заказа"
+        )
+    
+    return copied_order

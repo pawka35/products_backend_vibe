@@ -355,6 +355,46 @@ def update_order(db: Session, order_id: int, order_edit: OrderEdit):
     db.refresh(db_order)
     return db_order
 
+def copy_order(db: Session, order_id: int, customer_id: int):
+    """
+    Копирование заказа заказчиком
+    
+    Создает новый заказ на основе существующего с:
+    - Тем же исполнителем
+    - Теми же продуктами (все продукты со статусом "не куплен")
+    - Статусом PENDING (новый заказ)
+    - Тем же заказчиком
+    """
+    # Получаем исходный заказ
+    original_order = get_order(db, order_id)
+    if not original_order:
+        return None
+    
+    # Создаем новый заказ с теми же параметрами
+    db_order = Order(
+        customer_id=customer_id,
+        executor_id=original_order.executor_id,
+        status=OrderStatus.PENDING  # Копия всегда имеет статус "новый"
+    )
+    db.add(db_order)
+    db.commit()
+    db.refresh(db_order)
+    
+    # Копируем все продукты из исходного заказа
+    for original_product in original_order.products:
+        db_product = Product(
+            name=original_product.name,
+            quantity=original_product.quantity,
+            notes=original_product.notes,
+            order_id=db_order.id,
+            is_purchased=False  # В копии все продукты не куплены
+        )
+        db.add(db_product)
+    
+    db.commit()
+    db.refresh(db_order)
+    return db_order
+
 # CRUD операции для продуктов
 def get_product(db: Session, product_id: int):
     """Получение продукта по ID"""
