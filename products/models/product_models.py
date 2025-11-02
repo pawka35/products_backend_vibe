@@ -41,3 +41,18 @@ class Order(Base):
     customer = relationship("User", foreign_keys=[customer_id], back_populates="orders")
     executor = relationship("User", foreign_keys=[executor_id])  # Связь с исполнителем
     products = relationship("Product", back_populates="order", cascade="all, delete-orphan")
+
+class SavedProduct(Base):
+    """Модель для сохраненных товаров заказчика"""
+    __tablename__ = "saved_products"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    name = Column(String(200), nullable=False)
+    quantity = Column(Integer, nullable=False, default=1)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Связи
+    user = relationship("User", foreign_keys=[user_id])

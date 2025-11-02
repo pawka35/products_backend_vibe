@@ -133,3 +133,34 @@ class ExecutorOrdersListResponse(BaseModel):
     total_pages: int
     has_next: bool
     has_prev: bool
+
+# Схемы для сохраненных товаров
+class SavedProductCreate(BaseModel):
+    """Схема для создания сохраненного товара"""
+    name: str
+    quantity: int = 1
+    notes: Optional[str] = None
+
+class SavedProductUpdate(BaseModel):
+    """Схема для обновления сохраненного товара"""
+    name: Optional[str] = None
+    quantity: Optional[int] = None
+    notes: Optional[str] = None
+
+class SavedProduct(BaseModel):
+    """Схема сохраненного товара"""
+    id: int
+    user_id: int
+    name: str
+    quantity: int
+    notes: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class SavedProductListResponse(BaseModel):
+    """Схема ответа со списком сохраненных товаров"""
+    products: List[SavedProduct]
+    total_count: int

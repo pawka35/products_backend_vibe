@@ -11,7 +11,11 @@ from products.schemas import (
     OrderSummary,
     OrderStatusUpdate,
     UserOrdersListResponse,
-    OrderEdit
+    OrderEdit,
+    SavedProductCreate,
+    SavedProductUpdate,
+    SavedProduct,
+    SavedProductListResponse
 )
 from auth.utils import get_current_active_user
 from products.crud import (
@@ -23,7 +27,13 @@ from products.crud import (
     get_user_orders_with_filters,
     get_user_orders_count_with_filters,
     update_order,
-    copy_order
+    copy_order,
+    create_saved_product,
+    get_saved_product,
+    get_user_saved_products,
+    get_user_saved_products_count,
+    update_saved_product,
+    delete_saved_product
 )
 from auth.crud import get_user, get_users_by_role
 from auth.schemas import UserList
@@ -353,3 +363,88 @@ async def copy_order_endpoint(
         )
     
     return copied_order
+
+# Эндпоинты для сохраненных товаров
+@router.post("/products/saved", response_model=SavedProduct)
+async def create_saved_product_endpoint(
+    saved_product: SavedProductCreate,
+    current_user: UserModel = Depends(require_customer),
+    db: Session = Depends(get_db)
+):
+    """
+    Создание сохраненного товара (только для заказчиков)
+    """
+    db_saved_product = create_saved_product(db, saved_product, current_user.id)
+    return db_saved_product
+
+@router.get("/products/saved", response_model=SavedProductListResponse)
+async def get_saved_products_endpoint(
+    page: int = Query(1, ge=1, description="Номер страницы"),
+    per_page: int = Query(20, ge=1, le=100, description="Количество записей на странице"),
+    current_user: UserModel = Depends(require_customer),
+    db: Session = Depends(get_db)
+):
+    """
+    Получение списка сохраненных товаров текущего пользователя (только для заказчиков)
+    
+    Поддерживается пагинация.
+    """
+    # Вычисляем offset для пагинации
+    skip = (page - 1) * per_page
+    
+    # Получаем сохраненные товары пользователя
+    saved_products = get_user_saved_products(db, current_user.id, skip=skip, limit=per_page)
+    
+    # Получаем общее количество сохраненных товаров
+    total_count = get_user_saved_products_count(db, current_user.id)
+    
+    return SavedProductListResponse(
+        products=saved_products,
+        total_count=total_count
+    )
+
+@router.get("/products/saved/{saved_product_id}", response_model=SavedProduct)
+async def get_saved_product_endpoint(
+    saved_product_id: int,
+    current_user: UserModel = Depends(require_customer),
+    db: Session = Depends(get_db)
+):
+    """
+    Получение конкретного сохраненного товара (только для заказчиков, только свои товары)
+    """
+    saved_product = get_saved_product(db, saved_product_id, current_user.id)
+    if not saved_product:
+        raise HTTPException(status_code=404, detail="Сохраненный товар не найден")
+    
+    return saved_product
+
+@router.put("/products/saved/{saved_product_id}", response_model=SavedProduct)
+async def update_saved_product_endpoint(
+    saved_product_id: int,
+    saved_product_update: SavedProductUpdate,
+    current_user: UserModel = Depends(require_customer),
+    db: Session = Depends(get_db)
+):
+    """
+    Обновление сохраненного товара (только для заказчиков, только свои товары)
+    """
+    updated_product = update_saved_product(db, saved_product_id, saved_product_update, current_user.id)
+    if not updated_product:
+        raise HTTPException(status_code=404, detail="Сохраненный товар не найден")
+    
+    return updated_product
+
+@router.delete("/products/saved/{saved_product_id}")
+async def delete_saved_product_endpoint(
+    saved_product_id: int,
+    current_user: UserModel = Depends(require_customer),
+    db: Session = Depends(get_db)
+):
+    """
+    Удаление сохраненного товара (только для заказчиков, только свои товары)
+    """
+    success = delete_saved_product(db, saved_product_id, current_user.id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Сохраненный товар не найден")
+    
+    return {"message": "Сохраненный товар успешно удален"}

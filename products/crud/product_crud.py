@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, desc
-from products.models import Product, Order, OrderStatus
-from products.schemas import ProductCreate, OrderCreate, ProductPurchase, OrderEdit
+from products.models import Product, Order, OrderStatus, SavedProduct
+from products.schemas import ProductCreate, OrderCreate, ProductPurchase, OrderEdit, SavedProductCreate, SavedProductUpdate
 from datetime import datetime
 from typing import Optional, List, Dict
 
@@ -543,44 +543,60 @@ def get_orders_count_with_filters(
     
     return query.count()
 
-def get_all_orders_with_users_and_filters(
-    db: Session,
-    skip: int = 0,
-    limit: int = 100,
-    executor_id: Optional[int] = None,
-    customer_id: Optional[int] = None,
-    date_from: Optional[datetime] = None,
-    date_to: Optional[datetime] = None,
-    status: Optional[OrderStatus] = None
-):
-    """
-    Получение всех заказов с фильтрами и предзагруженными пользователями (оптимизированная версия)
-    """
-    from auth.models import User
-    
-    query = db.query(Order).options(
-        joinedload(Order.customer),
-        joinedload(Order.executor),
-        joinedload(Order.products)
+# CRUD операции для сохраненных товаров
+def create_saved_product(db: Session, saved_product: SavedProductCreate, user_id: int):
+    """Создание сохраненного товара"""
+    db_saved_product = SavedProduct(
+        user_id=user_id,
+        name=saved_product.name,
+        quantity=saved_product.quantity,
+        notes=saved_product.notes
     )
+    db.add(db_saved_product)
+    db.commit()
+    db.refresh(db_saved_product)
+    return db_saved_product
 
-    # Применяем фильтры
-    if executor_id is not None:
-        query = query.filter(Order.executor_id == executor_id)
+def get_saved_product(db: Session, saved_product_id: int, user_id: int):
+    """Получение сохраненного товара по ID (только свой)"""
+    return db.query(SavedProduct).filter(
+        SavedProduct.id == saved_product_id,
+        SavedProduct.user_id == user_id
+    ).first()
 
-    if customer_id is not None:
-        query = query.filter(Order.customer_id == customer_id)
+def get_user_saved_products(db: Session, user_id: int, skip: int = 0, limit: int = 100):
+    """Получение всех сохраненных товаров пользователя"""
+    return db.query(SavedProduct).filter(
+        SavedProduct.user_id == user_id
+    ).order_by(desc(SavedProduct.created_at)).offset(skip).limit(limit).all()
 
-    if date_from is not None:
-        query = query.filter(Order.created_at >= date_from)
+def get_user_saved_products_count(db: Session, user_id: int):
+    """Получение количества сохраненных товаров пользователя"""
+    return db.query(SavedProduct).filter(SavedProduct.user_id == user_id).count()
 
-    if date_to is not None:
-        query = query.filter(Order.created_at <= date_to)
+def update_saved_product(db: Session, saved_product_id: int, saved_product_update: SavedProductUpdate, user_id: int):
+    """Обновление сохраненного товара"""
+    db_saved_product = get_saved_product(db, saved_product_id, user_id)
+    if not db_saved_product:
+        return None
+    
+    if saved_product_update.name is not None:
+        db_saved_product.name = saved_product_update.name
+    if saved_product_update.quantity is not None:
+        db_saved_product.quantity = saved_product_update.quantity
+    if saved_product_update.notes is not None:
+        db_saved_product.notes = saved_product_update.notes
+    
+    db.commit()
+    db.refresh(db_saved_product)
+    return db_saved_product
 
-    if status is not None:
-        query = query.filter(Order.status == status)
-
-    # Сортируем по дате создания (новые сначала)
-    query = query.order_by(desc(Order.created_at))
-
-    return query.offset(skip).limit(limit).all()
+def delete_saved_product(db: Session, saved_product_id: int, user_id: int):
+    """Удаление сохраненного товара"""
+    db_saved_product = get_saved_product(db, saved_product_id, user_id)
+    if not db_saved_product:
+        return False
+    
+    db.delete(db_saved_product)
+    db.commit()
+    return True
