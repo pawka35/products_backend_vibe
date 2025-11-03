@@ -6,6 +6,7 @@ from database import get_db
 from auth.models import User as UserModel, UserRole
 from auth.schemas import UserResponse, UserList
 from auth.utils import get_current_active_user
+from auth.utils.role_utils import has_admin_access
 from auth.crud import get_users, get_user, get_users_by_role
 from app.crud import (
     change_user_password,
@@ -37,8 +38,11 @@ from products.models import OrderStatus
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 def require_admin(current_user: UserModel = Depends(get_current_active_user)):
-    """Проверка, что пользователь является администратором"""
-    if current_user.role != UserRole.ADMIN:
+    """
+    Проверка, что пользователь является администратором.
+    Поддерживает множественные роли - проверяет наличие роли admin.
+    """
+    if not has_admin_access(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Требуются права администратора"

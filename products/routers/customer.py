@@ -20,6 +20,7 @@ from products.schemas import (
     ProductSearchResponse
 )
 from auth.utils import get_current_active_user
+from auth.utils.role_utils import has_customer_access
 from products.crud import (
     create_order, 
     get_user_orders, 
@@ -44,8 +45,12 @@ from products.services import MaxiRetailSearchService
 router = APIRouter(prefix="/customer", tags=["customer"])
 
 def require_customer(current_user: UserModel = Depends(get_current_active_user)):
-    """Проверка, что пользователь является заказчиком"""
-    if current_user.role not in [UserRole.CUSTOMER, UserRole.ADMIN]:
+    """
+    Проверка, что пользователь является заказчиком.
+    Поддерживает множественные роли - пользователь может иметь роль customer
+    или быть администратором (admin имеет доступ ко всем функциям).
+    """
+    if not has_customer_access(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, 
             detail="Требуются права заказчика"

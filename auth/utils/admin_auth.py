@@ -3,6 +3,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from auth.utils.auth_utils import get_current_user
 from auth.models.user_models import User, UserRole
+from auth.utils.role_utils import has_admin_access, is_admin
 from database import get_db
 from typing import Optional
 
@@ -13,9 +14,10 @@ def get_current_admin_user(
     db: Session = Depends(get_db)
 ) -> User:
     """
-    Проверяет, что текущий пользователь является администратором
+    Проверяет, что текущий пользователь является администратором.
+    Поддерживает множественные роли - проверяет наличие роли admin.
     """
-    if current_user.role != UserRole.ADMIN:
+    if not has_admin_access(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Недостаточно прав. Требуется роль администратора."
@@ -66,8 +68,8 @@ def check_user_permissions(
             detail="Пользователь не найден."
         )
     
-    # Проверяем, не пытается ли обычный администратор управлять другим администратором
-    if target_user.role == UserRole.ADMIN and current_user.role != UserRole.ADMIN:
+    # Проверяем, не пытается ли не-администратор управлять администратором
+    if is_admin(target_user) and not has_admin_access(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Недостаточно прав для управления администраторами."
@@ -88,7 +90,7 @@ def get_admin_user_with_optional_auth(
     
     try:
         current_user = get_current_user(credentials, db)
-        if current_user.role == UserRole.ADMIN and current_user.is_active:
+        if has_admin_access(current_user) and current_user.is_active:
             return current_user
     except:
         pass

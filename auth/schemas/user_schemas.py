@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, validator, Field
-from typing import Optional
+from typing import Optional, List, Set
 from auth.models import UserRole
 from auth.validators import validate_password_strength
 from datetime import datetime
@@ -49,13 +49,32 @@ class UserResponse(BaseModel):
     id: int
     username: str
     email: EmailStr
-    role: UserRole
+    role: UserRole  # Основная роль (для обратной совместимости)
+    roles: Optional[List[str]] = None  # Список всех ролей пользователя
     is_active: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+        
+    @classmethod
+    def from_user(cls, user):
+        """Создать схему из объекта User с поддержкой множественных ролей"""
+        roles = None
+        if hasattr(user, 'get_roles'):
+            roles = list(user.get_roles())
+        
+        return cls(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            role=user.role,
+            roles=roles,
+            is_active=user.is_active,
+            created_at=user.created_at,
+            updated_at=user.updated_at
+        )
 
 class Token(BaseModel):
     access_token: str
@@ -73,13 +92,32 @@ class UserList(BaseModel):
     id: int
     username: str
     email: EmailStr
-    role: UserRole
+    role: UserRole  # Основная роль (для обратной совместимости)
+    roles: Optional[List[str]] = None  # Список всех ролей пользователя
     is_active: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+        
+    @classmethod
+    def from_user(cls, user):
+        """Создать схему из объекта User с поддержкой множественных ролей"""
+        roles = None
+        if hasattr(user, 'get_roles'):
+            roles = list(user.get_roles())
+        
+        return cls(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            role=user.role,
+            roles=roles,
+            is_active=user.is_active,
+            created_at=user.created_at,
+            updated_at=user.updated_at
+        )
 
 class PasswordChange(BaseModel):
     """Схема для изменения пароля"""

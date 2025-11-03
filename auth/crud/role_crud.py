@@ -223,6 +223,58 @@ class RoleAssignmentCRUD:
     def get_role_assignment(self, db: Session, role_assignment_id: int) -> Optional[RoleAssignment]:
         """Получение конкретной связи пользователя с ролью"""
         return db.query(RoleAssignment).filter(RoleAssignment.id == role_assignment_id).first()
+    
+    def user_has_role(self, db: Session, user_id: int, role_name: str) -> bool:
+        """
+        Проверяет, имеет ли пользователь указанную роль.
+        Проверяет как базовую роль из таблицы users, так и дополнительные роли из user_roles.
+        """
+        # Проверяем базовую роль
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return False
+        
+        if user.role.value.lower() == role_name.lower():
+            return True
+        
+        # Проверяем дополнительные роли
+        role = db.query(Role).filter(func.lower(Role.name) == role_name.lower()).first()
+        if not role:
+            return False
+        
+        has_role = db.query(RoleAssignment).filter(
+            and_(
+                RoleAssignment.user_id == user_id,
+                RoleAssignment.role_id == role.id,
+                RoleAssignment.is_active == True
+            )
+        ).first()
+        
+        return has_role is not None
+    
+    def ensure_basic_roles(self, db: Session):
+        """
+        Убедиться, что базовые роли существуют в таблице roles.
+        Создает роли admin, customer, executor если их нет.
+        """
+        basic_roles = [
+            {"name": "admin", "description": "Администратор системы", "permissions": None},
+            {"name": "customer", "description": "Заказчик", "permissions": None},
+            {"name": "executor", "description": "Исполнитель", "permissions": None}
+        ]
+        
+        created_roles = []
+        for role_data in basic_roles:
+            existing_role = self.get_role_by_name(db, role_data["name"])
+            if not existing_role:
+                db_role = Role(**role_data)
+                db.add(db_role)
+                created_roles.append(role_data["name"])
+        
+        if created_roles:
+            db.commit()
+        
+        return created_roles
 
 # Создаем экземпляры для использования
 role_crud = RoleCRUD()

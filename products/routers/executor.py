@@ -13,6 +13,7 @@ from products.schemas import (
     ExecutorOrdersListResponse
 )
 from auth.utils import get_current_active_user
+from auth.utils.role_utils import has_executor_access
 from products.crud import (
     get_all_orders, 
     get_order, 
@@ -28,8 +29,12 @@ from products.crud import (
 router = APIRouter(prefix="/executor", tags=["executor"])
 
 def require_executor(current_user: UserModel = Depends(get_current_active_user)):
-    """Проверка, что пользователь является исполнителем"""
-    if current_user.role not in [UserRole.EXECUTOR, UserRole.ADMIN]:
+    """
+    Проверка, что пользователь является исполнителем.
+    Поддерживает множественные роли - пользователь может иметь роль executor
+    или быть администратором (admin имеет доступ ко всем функциям).
+    """
+    if not has_executor_access(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, 
             detail="Требуются права исполнителя"

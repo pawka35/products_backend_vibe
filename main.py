@@ -7,6 +7,8 @@ from auth.routers.role_router import router as role_router # Добавляю о
 from app.admin import admin_router
 from products.routers import customer_router, executor_router
 from auth.utils.admin_init import ensure_admin_exists, ensure_basic_roles
+from auth.utils.init_roles import ensure_basic_roles as ensure_role_models
+from database import SessionLocal
 from utils.logging_config import setup_logging
 from middleware.logging_middleware import LoggingMiddleware
 
@@ -15,6 +17,14 @@ setup_logging()
 
 # Создаем таблицы в базе данных
 Base.metadata.create_all(bind=engine)
+
+# Инициализируем базовые роли в таблице roles (для множественных ролей)
+print("🔍 Инициализация системы множественных ролей...")
+db = SessionLocal()
+try:
+    ensure_role_models(db)
+finally:
+    db.close()
 
 # Инициализируем администратора и базовые роли при запуске
 print("🔍 Проверяем наличие администратора в системе...")
