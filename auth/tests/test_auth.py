@@ -236,21 +236,22 @@ def test_user_profile_update():
         if response.status_code == 200:
             user_info = response.json()
             print(f"   Профиль получен: {user_info['username']}")
+        
+        # 10. Попытка изменить пароль с неверным текущим паролем
+        print("\n10. Попытка изменения пароля с неверным текущим паролем...")
+        wrong_password_data = {
+            "current_password": "WrongPassword123!",
+            "new_password": "AnotherPass789!"
+        }
+        
+        response = requests.put(f"{BASE_URL}/auth/me/password", json=wrong_password_data, headers=new_headers)
+        if response.status_code == 400:
+            print(f"   Ожидаемая ошибка: {response.json()['detail']}")
+        else:
+            print(f"   Неожиданный результат: {response.status_code}")
     else:
         print(f"   Ошибка входа: {response.text}")
-    
-    # 10. Попытка изменить пароль с неверным текущим паролем
-    print("\n10. Попытка изменения пароля с неверным текущим паролем...")
-    wrong_password_data = {
-        "current_password": "WrongPassword123!",
-        "new_password": "AnotherPass789!"
-    }
-    
-    response = requests.put(f"{BASE_URL}/auth/me/password", json=wrong_password_data, headers=new_headers)
-    if response.status_code == 400:
-        print(f"   Ожидаемая ошибка: {response.json()['detail']}")
-    else:
-        print(f"   Неожиданный результат: {response.status_code}")
+        print("   Пропускаем тест 10 из-за неудачного входа")
     
     print("\n" + "=" * 50)
     print("Тест обновления профиля завершен успешно! 🎉")

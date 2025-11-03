@@ -188,7 +188,7 @@ def change_password(token, current_password, new_password):
         print(f"❌ Ошибка изменения пароля: {response.text}")
         return False
 
-def test_old_password(username, old_password):
+def check_old_password(username, old_password):
     """Проверить вход со старым паролем"""
     print(f"\n🚫 Попытка входа со старым паролем...")
     response = requests.post(
@@ -203,7 +203,7 @@ def test_old_password(username, old_password):
         print(f"❌ Неожиданный результат: {response.status_code}")
         return False
 
-def test_new_password(username, new_password):
+def check_new_password(username, new_password):
     """Проверить вход с новым паролем"""
     print(f"\n✅ Попытка входа с новым паролем...")
     response = requests.post(
@@ -218,7 +218,7 @@ def test_new_password(username, new_password):
         print(f"❌ Ошибка входа: {response.text}")
         return None
 
-def test_wrong_current_password(token):
+def check_wrong_current_password(token):
     """Попытка изменения пароля с неверным текущим паролем"""
     print(f"\n⚠️  Попытка изменения пароля с неверным текущим паролем...")
     headers = {"Authorization": f"Bearer {token}"}
@@ -291,10 +291,10 @@ def main():
     change_password(token, password, new_password)
     
     # 10. Проверяем вход со старым паролем
-    test_old_password(new_username2, password)
+    check_old_password(new_username2, password)
     
     # 11. Проверяем вход с новым паролем
-    new_token = test_new_password(new_username2, new_password)
+    new_token = check_new_password(new_username2, new_password)
     
     if new_token:
         # 12. Проверяем профиль с новым токеном
@@ -305,7 +305,7 @@ def main():
             print(f"   - Email: {user_info['email']}")
         
         # 13. Попытка изменения пароля с неверным текущим паролем
-        test_wrong_current_password(new_token)
+        check_wrong_current_password(new_token)
     
     print("\n" + "=" * 70)
     print("✅ ТЕСТ ЗАВЕРШЕН УСПЕШНО!")

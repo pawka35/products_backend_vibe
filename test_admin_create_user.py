@@ -79,7 +79,7 @@ def cleanup_users(token):
     print(f"✅ Удалено {deleted_count} из {len(created_users)} пользователей")
     created_users.clear()
 
-def test_login(username, password):
+def check_login(username, password):
     """Проверить вход пользователя"""
     print(f"\n🔑 Проверка входа для {username}...")
     response = requests.post(
@@ -150,13 +150,13 @@ def main():
     
     # 5. Проверяем вход созданных пользователей
     if customer:
-        test_login(customer["username"], "TestPass123!")
+        check_login(customer["username"], "TestPass123!")
     
     if executor:
-        test_login(executor["username"], "TestPass123!")
+        check_login(executor["username"], "TestPass123!")
     
     if new_admin:
-        test_login(new_admin["username"], "TestPass123!")
+        check_login(new_admin["username"], "TestPass123!")
         
         # Проверяем, что новый администратор может создавать пользователей
         new_admin_token = get_admin_token(

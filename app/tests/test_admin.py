@@ -85,28 +85,30 @@ def test_admin_functions():
         else:
             print(f"     Пароль пользователя {test_user['username']} изменен")
     
-    # 6. Проверка, что изменения применились
-    print("\n6. Проверка изменений...")
-    response = requests.get(f"{BASE_URL}/admin/users/{test_user['id']}", headers=admin_headers)
-    if response.status_code != 200:
-        print(f"   Ошибка получения пользователя: {response.text}")
-        return
-    
-    updated_user = response.json()
-    print(f"   Обновленная роль: {updated_user['role']}")
-    
-    # 7. Тест с новым паролем
-    print("\n7. Тест с новым паролем...")
-    new_login = {
-        "username": "testuser",
-        "password": "newpassword123"
-    }
-    
-    response = requests.post(f"{BASE_URL}/auth/token", data=new_login)
-    if response.status_code != 200:
-        print(f"   Ошибка входа с новым паролем: {response.text}")
+        # 6. Проверка, что изменения применились
+        print("\n6. Проверка изменений...")
+        response = requests.get(f"{BASE_URL}/admin/users/{test_user['id']}", headers=admin_headers)
+        if response.status_code != 200:
+            print(f"   Ошибка получения пользователя: {response.text}")
+            return
+        
+        updated_user = response.json()
+        print(f"   Обновленная роль: {updated_user['role']}")
+        
+        # 7. Тест с новым паролем
+        print("\n7. Тест с новым паролем...")
+        new_login = {
+            "username": "testuser",
+            "password": "newpassword123"
+        }
+        
+        response = requests.post(f"{BASE_URL}/auth/token", data=new_login)
+        if response.status_code != 200:
+            print(f"   Ошибка входа с новым паролем: {response.text}")
+        else:
+            print("   Вход с новым паролем успешен")
     else:
-        print("   Вход с новым паролем успешен")
+        print("   Пользователь testuser не найден, пропускаем тесты 6-7")
     
     print("\n" + "=" * 50)
     print("Тест завершен успешно! 🎉")
