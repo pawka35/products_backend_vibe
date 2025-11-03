@@ -2,6 +2,20 @@ from sqlalchemy.orm import Session
 from auth.models import User, UserRole
 from auth.utils import get_password_hash
 
+def create_user_by_admin(db: Session, username: str, email: str, password: str, role: UserRole):
+    """Создание пользователя администратором (с возможностью указать любую роль)"""
+    hashed_password = get_password_hash(password)
+    db_user = User(
+        username=username,
+        email=email,
+        hashed_password=hashed_password,
+        role=role
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
 def change_user_password(db: Session, user_id: int, new_password: str):
     """Изменение пароля пользователя"""
     db_user = db.query(User).filter(User.id == user_id).first()

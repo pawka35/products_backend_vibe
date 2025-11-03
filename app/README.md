@@ -56,12 +56,14 @@ app/
 - `GET /users/role/{role}` - Пользователи с определенной ролью
 
 ### Административные функции (только для администраторов)
+- `POST /admin/users` - Создание нового пользователя (с любой ролью, включая admin)
 - `GET /admin/statistics` - Статистика пользователей системы
 - `GET /admin/users` - Список всех пользователей для администратора
 - `GET /admin/users/{id}` - Детальная информация о пользователе
 - `GET /admin/users/role/{role}` - Пользователи с определенной ролью
 - `PUT /admin/users/{id}/role` - Изменение роли пользователя
 - `PUT /admin/users/{id}/password` - Изменение пароля пользователя
+- `DELETE /admin/users/{id}` - Деактивация пользователя
 
 ## 🔒 Модели данных
 
@@ -158,6 +160,35 @@ python -m pytest app/tests/ -v
 - ✅ Статистика системы
 
 ## 📊 Примеры использования
+
+### Создание пользователя администратором
+```python
+# POST /admin/users
+# Headers: Authorization: Bearer <admin_token>
+{
+    "username": "new_user",
+    "email": "newuser@example.com",
+    "password": "SecurePass123!",
+    "role": "customer"  # или "executor", или "admin"
+}
+
+# Ответ
+{
+    "id": 10,
+    "username": "new_user",
+    "email": "newuser@example.com",
+    "role": "customer",
+    "is_active": true,
+    "created_at": "2024-01-01T12:00:00Z",
+    "updated_at": null
+}
+```
+
+**Особенности:**
+- ✅ Администратор может создавать пользователей с любой ролью, включая `admin`
+- ✅ Пароль должен соответствовать требованиям безопасности (минимум 8 символов)
+- ✅ Username и email должны быть уникальными
+- ✅ Валидация данных происходит на уровне схемы
 
 ### Получение статистики
 ```python

@@ -111,5 +111,186 @@ def test_admin_functions():
     print("\n" + "=" * 50)
     print("Тест завершен успешно! 🎉")
 
+def test_admin_create_user():
+    """Тест создания пользователя администратором"""
+    
+    print("\nТест создания пользователя администратором")
+    print("=" * 50)
+    
+    # 1. Получение токена для администратора
+    print("1. Получение токена для администратора...")
+    admin_login = {
+        "username": "admin",
+        "password": "admin123"
+    }
+    
+    response = requests.post(f"{BASE_URL}/auth/token", data=admin_login)
+    if response.status_code != 200:
+        print(f"   Ошибка получения токена админа: {response.text}")
+        return
+    
+    admin_token = response.json()["access_token"]
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+    print("   Токен администратора получен")
+    
+    # 2. Создание пользователя с ролью customer
+    print("\n2. Создание пользователя с ролью customer...")
+    customer_data = {
+        "username": "new_customer",
+        "email": "customer@example.com",
+        "password": "SecurePass123!",
+        "role": "customer"
+    }
+    
+    response = requests.post(
+        f"{BASE_URL}/admin/users",
+        json=customer_data,
+        headers=admin_headers
+    )
+    
+    if response.status_code == 200:
+        user = response.json()
+        print(f"   Пользователь создан: {user['username']} (роль: {user['role']})")
+        customer_id = user['id']
+    else:
+        print(f"   Ошибка создания пользователя: {response.text}")
+        customer_id = None
+    
+    # 3. Создание пользователя с ролью executor
+    print("\n3. Создание пользователя с ролью executor...")
+    executor_data = {
+        "username": "new_executor",
+        "email": "executor@example.com",
+        "password": "SecurePass123!",
+        "role": "executor"
+    }
+    
+    response = requests.post(
+        f"{BASE_URL}/admin/users",
+        json=executor_data,
+        headers=admin_headers
+    )
+    
+    if response.status_code == 200:
+        user = response.json()
+        print(f"   Пользователь создан: {user['username']} (роль: {user['role']})")
+        executor_id = user['id']
+    else:
+        print(f"   Ошибка создания пользователя: {response.text}")
+        executor_id = None
+    
+    # 4. Создание пользователя с ролью admin
+    print("\n4. Создание пользователя с ролью admin...")
+    admin_data = {
+        "username": "new_admin",
+        "email": "newadmin@example.com",
+        "password": "SecurePass123!",
+        "role": "admin"
+    }
+    
+    response = requests.post(
+        f"{BASE_URL}/admin/users",
+        json=admin_data,
+        headers=admin_headers
+    )
+    
+    if response.status_code == 200:
+        user = response.json()
+        print(f"   Пользователь создан: {user['username']} (роль: {user['role']})")
+        new_admin_id = user['id']
+    else:
+        print(f"   Ошибка создания пользователя: {response.text}")
+        new_admin_id = None
+    
+    # 5. Попытка создания пользователя с существующим username
+    print("\n5. Попытка создания пользователя с существующим username...")
+    duplicate_data = {
+        "username": "new_customer",
+        "email": "another@example.com",
+        "password": "SecurePass123!",
+        "role": "customer"
+    }
+    
+    response = requests.post(
+        f"{BASE_URL}/admin/users",
+        json=duplicate_data,
+        headers=admin_headers
+    )
+    
+    if response.status_code == 400:
+        print(f"   Ожидаемая ошибка: {response.json()['detail']}")
+    else:
+        print(f"   Неожиданный результат: {response.status_code}")
+    
+    # 6. Попытка создания пользователя с существующим email
+    print("\n6. Попытка создания пользователя с существующим email...")
+    duplicate_email_data = {
+        "username": "another_user",
+        "email": "customer@example.com",
+        "password": "SecurePass123!",
+        "role": "customer"
+    }
+    
+    response = requests.post(
+        f"{BASE_URL}/admin/users",
+        json=duplicate_email_data,
+        headers=admin_headers
+    )
+    
+    if response.status_code == 400:
+        print(f"   Ожидаемая ошибка: {response.json()['detail']}")
+    else:
+        print(f"   Неожиданный результат: {response.status_code}")
+    
+    # 7. Проверка, что новый администратор может войти
+    if new_admin_id:
+        print("\n7. Проверка входа нового администратора...")
+        new_admin_login = {
+            "username": "new_admin",
+            "password": "SecurePass123!"
+        }
+        
+        response = requests.post(f"{BASE_URL}/auth/token", data=new_admin_login)
+        if response.status_code == 200:
+            print("   Новый администратор успешно вошел в систему")
+            new_admin_token = response.json()["access_token"]
+            
+            # Проверка, что новый админ может создавать пользователей
+            print("\n8. Проверка прав нового администратора...")
+            new_admin_headers = {"Authorization": f"Bearer {new_admin_token}"}
+            
+            test_user_data = {
+                "username": "test_by_new_admin",
+                "email": "testbynewadmin@example.com",
+                "password": "SecurePass123!",
+                "role": "customer"
+            }
+            
+            response = requests.post(
+                f"{BASE_URL}/admin/users",
+                json=test_user_data,
+                headers=new_admin_headers
+            )
+            
+            if response.status_code == 200:
+                print("   Новый администратор может создавать пользователей")
+            else:
+                print(f"   Ошибка: {response.text}")
+        else:
+            print(f"   Ошибка входа: {response.text}")
+    
+    # 8. Получение статистики
+    print("\n9. Получение обновленной статистики...")
+    response = requests.get(f"{BASE_URL}/admin/statistics", headers=admin_headers)
+    if response.status_code == 200:
+        stats = response.json()
+        print(f"   Всего пользователей: {stats['total_users']}")
+        print(f"   По ролям: {stats['users_by_role']}")
+    
+    print("\n" + "=" * 50)
+    print("Тест создания пользователей завершен успешно! 🎉")
+
 if __name__ == "__main__":
     test_admin_functions()
+    print("\n")
+    test_admin_create_user()

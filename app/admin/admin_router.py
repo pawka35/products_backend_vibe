@@ -11,14 +11,16 @@ from app.crud import (
     change_user_password,
     change_user_role,
     deactivate_user,
-    get_user_statistics
+    get_user_statistics,
+    create_user_by_admin
 )
 from app.schemas import (
     ChangePasswordRequest,
     ChangeRoleRequest,
     UserManagementResponse,
     UserStatistics,
-    BulkUserOperation
+    BulkUserOperation,
+    AdminUserCreate
 )
 from products.crud import (
     get_all_orders_with_filters,
@@ -42,6 +44,42 @@ def require_admin(current_user: UserModel = Depends(get_current_active_user)):
             detail="Требуются права администратора"
         )
     return current_user
+
+@router.post("/users", response_model=UserResponse)
+async def admin_create_user(
+    user_data: AdminUserCreate,
+    current_user: UserModel = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Создание нового пользователя администратором (с возможностью указать любую роль, включая admin)
+    """
+    # Проверяем, существует ли пользователь с таким username
+    existing_user = db.query(UserModel).filter(UserModel.username == user_data.username).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Пользователь с таким именем уже существует"
+        )
+    
+    # Проверяем, существует ли пользователь с таким email
+    existing_email = db.query(UserModel).filter(UserModel.email == user_data.email).first()
+    if existing_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Пользователь с таким email уже существует"
+        )
+    
+    # Создаем пользователя
+    new_user = create_user_by_admin(
+        db=db,
+        username=user_data.username,
+        email=user_data.email,
+        password=user_data.password,
+        role=user_data.role
+    )
+    
+    return new_user
 
 @router.get("/users", response_model=List[UserList])
 async def admin_get_users(
