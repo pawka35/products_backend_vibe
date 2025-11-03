@@ -8,6 +8,9 @@ import sys
 
 BASE_URL = "http://localhost:8000"
 
+# Список созданных пользователей для очистки
+created_users = []
+
 def get_admin_token(username="admin", password="Admin123!"):
     """Получить токен администратора"""
     print(f"🔐 Получение токена для {username}...")
@@ -47,10 +50,34 @@ def create_user(token, username, email, password, role):
         print(f"   - Username: {user['username']}")
         print(f"   - Email: {user['email']}")
         print(f"   - Role: {user['role']}")
+        created_users.append(user['id'])  # Добавляем ID для последующей очистки
         return user
     else:
         print(f"❌ Ошибка создания: {response.text}")
         return None
+
+def delete_user(token, user_id):
+    """Удалить пользователя"""
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.delete(
+        f"{BASE_URL}/admin/users/{user_id}",
+        headers=headers
+    )
+    return response.status_code in [200, 204]
+
+def cleanup_users(token):
+    """Очистка всех созданных тестовых пользователей"""
+    if not created_users:
+        return
+    
+    print(f"\n🧹 Очистка тестовых данных ({len(created_users)} пользователей)...")
+    deleted_count = 0
+    for user_id in created_users:
+        if delete_user(token, user_id):
+            deleted_count += 1
+    
+    print(f"✅ Удалено {deleted_count} из {len(created_users)} пользователей")
+    created_users.clear()
 
 def test_login(username, password):
     """Проверить вход пользователя"""
@@ -169,16 +196,36 @@ def main():
     print("\n" + "=" * 70)
     print("✅ ТЕСТ ЗАВЕРШЕН УСПЕШНО!")
     print("=" * 70)
+    
+    # Очистка тестовых данных
+    cleanup_users(admin_token)
 
 if __name__ == "__main__":
+    admin_token = None
     try:
         main()
     except KeyboardInterrupt:
         print("\n\n⚠️  Тест прерван пользователем")
+        # Попытка очистить данные перед выходом
+        if created_users:
+            try:
+                token = get_admin_token()
+                if token:
+                    cleanup_users(token)
+            except:
+                pass
         sys.exit(0)
     except Exception as e:
         print(f"\n\n❌ Ошибка: {e}")
         import traceback
         traceback.print_exc()
+        # Попытка очистить данные перед выходом
+        if created_users:
+            try:
+                token = get_admin_token()
+                if token:
+                    cleanup_users(token)
+            except:
+                pass
         sys.exit(1)
 

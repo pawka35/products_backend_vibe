@@ -3,6 +3,42 @@ import json
 
 BASE_URL = "http://localhost:8000"
 
+# Список созданных пользователей для очистки
+created_user_ids = []
+
+def cleanup_users():
+    """Удалить всех созданных тестовых пользователей"""
+    if not created_user_ids:
+        return
+    
+    print(f"\n🧹 Очистка тестовых данных ({len(created_user_ids)} пользователей)...")
+    
+    # Получаем токен администратора
+    admin_login = {
+        "username": "admin",
+        "password": "Admin123!"
+    }
+    
+    response = requests.post(f"{BASE_URL}/auth/token", data=admin_login)
+    if response.status_code != 200:
+        print("❌ Не удалось получить токен администратора для очистки")
+        return
+    
+    admin_token = response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    
+    deleted_count = 0
+    for user_id in created_user_ids:
+        response = requests.delete(
+            f"{BASE_URL}/admin/users/{user_id}",
+            headers=headers
+        )
+        if response.status_code in [200, 204]:
+            deleted_count += 1
+    
+    print(f"✅ Удалено {deleted_count} из {len(created_user_ids)} пользователей")
+    created_user_ids.clear()
+
 def test_auth_flow():
     """Тест полного цикла аутентификации"""
     
@@ -25,6 +61,7 @@ def test_auth_flow():
     
     user = response.json()
     print(f"   Пользователь создан: {user['username']}")
+    created_user_ids.append(user['id'])  # Сохраняем для очистки
     
     # 2. Получение токена
     print("\n2. Получение токена...")
@@ -54,6 +91,9 @@ def test_auth_flow():
     
     print("\n" + "=" * 50)
     print("Тест завершен успешно! 🎉")
+    
+    # Очистка
+    cleanup_users()
 
 def test_user_profile_update():
     """Тест обновления профиля и пароля пользователя"""
@@ -77,7 +117,9 @@ def test_user_profile_update():
         print(f"   Ошибка регистрации: {response.text}")
         return
     
+    user = response.json()
     print(f"   Пользователь создан: {user_data['username']}")
+    created_user_ids.append(user['id'])  # Сохраняем для очистки
     
     # 2. Получаем токен
     print("\n2. Получение токена...")
@@ -212,8 +254,19 @@ def test_user_profile_update():
     
     print("\n" + "=" * 50)
     print("Тест обновления профиля завершен успешно! 🎉")
+    
+    # Очистка
+    cleanup_users()
 
 if __name__ == "__main__":
-    test_auth_flow()
-    print("\n")
-    test_user_profile_update()
+    try:
+        test_auth_flow()
+        print("\n")
+        test_user_profile_update()
+    except KeyboardInterrupt:
+        print("\n\n⚠️  Тест прерван пользователем")
+        cleanup_users()
+    except Exception as e:
+        print(f"\n\n❌ Ошибка: {e}")
+        cleanup_users()
+        raise

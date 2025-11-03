@@ -9,8 +9,12 @@ import random
 
 BASE_URL = "http://localhost:8000"
 
+# ID созданного пользователя для очистки
+created_user_id = None
+
 def create_test_user():
     """Создать тестового пользователя"""
+    global created_user_id
     test_suffix = random.randint(1000, 9999)
     username = f"profiletest_{test_suffix}"
     email = f"profiletest_{test_suffix}@example.com"
@@ -27,11 +31,48 @@ def create_test_user():
     
     response = requests.post(f"{BASE_URL}/auth/register", json=user_data)
     if response.status_code == 200:
+        user = response.json()
+        created_user_id = user['id']  # Сохраняем ID для очистки
         print("✅ Пользователь создан")
         return username, email, password
     else:
         print(f"❌ Ошибка создания: {response.text}")
         return None, None, None
+
+def cleanup_test_user():
+    """Удалить созданного тестового пользователя"""
+    global created_user_id
+    if not created_user_id:
+        return
+    
+    print(f"\n🧹 Очистка тестовых данных (user_id: {created_user_id})...")
+    
+    # Получаем токен администратора для удаления
+    admin_login = {
+        "username": "admin",
+        "password": "Admin123!"
+    }
+    
+    response = requests.post(f"{BASE_URL}/auth/token", data=admin_login)
+    if response.status_code != 200:
+        print("❌ Не удалось получить токен администратора для очистки")
+        return
+    
+    admin_token = response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    
+    # Удаляем пользователя
+    response = requests.delete(
+        f"{BASE_URL}/admin/users/{created_user_id}",
+        headers=headers
+    )
+    
+    if response.status_code in [200, 204]:
+        print("✅ Тестовый пользователь удален")
+    else:
+        print(f"⚠️  Не удалось удалить пользователя: {response.text}")
+    
+    created_user_id = None
 
 def get_token(username, password):
     """Получить токен"""
@@ -278,16 +319,29 @@ def main():
     print("   ✅ Проверка старого пароля (отклонено)")
     print("   ✅ Проверка нового пароля (успешно)")
     print("   ✅ Валидация неверного текущего пароля")
+    
+    # Очистка тестовых данных
+    cleanup_test_user()
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
         print("\n\n⚠️  Тест прерван пользователем")
+        # Попытка очистить данные перед выходом
+        try:
+            cleanup_test_user()
+        except:
+            pass
         sys.exit(0)
     except Exception as e:
         print(f"\n\n❌ Ошибка: {e}")
         import traceback
         traceback.print_exc()
+        # Попытка очистить данные перед выходом
+        try:
+            cleanup_test_user()
+        except:
+            pass
         sys.exit(1)
 
