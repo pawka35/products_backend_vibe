@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, patch
 from products.services.search_service import MaxiRetailSearchService
 from products.schemas.search_schemas import ProductSearchRequest, ProductSearchResponse
-from products.routers.search import router
+from products.routers.customer import router
 from datetime import datetime
 
 class TestSearchService:
@@ -76,7 +76,7 @@ class TestSearchSchemas:
         assert response.has_prev == False
 
 class TestSearchRouter:
-    """Тесты для роутера поиска"""
+    """Тесты для роутера поиска в customer"""
     
     def test_router_import(self):
         """Тест импорта роутера"""
@@ -84,10 +84,14 @@ class TestSearchRouter:
         assert hasattr(router, 'routes')
     
     def test_search_endpoint_exists(self):
-        """Тест существования эндпоинта поиска"""
+        """Тест существования эндпоинта поиска в customer роутере"""
         # Проверяем, что роутер имеет маршруты
         assert len(router.routes) > 0
         
-        # Проверяем, что есть хотя бы один POST маршрут
+        # Проверяем, что есть хотя бы один POST маршрут (их должно быть несколько в customer)
         post_routes = [route for route in router.routes if hasattr(route, 'methods') and 'POST' in route.methods]
         assert len(post_routes) > 0
+        
+        # Проверяем, что есть маршрут для поиска товаров
+        search_routes = [route for route in router.routes if hasattr(route, 'path') and '/search/products' in route.path]
+        assert len(search_routes) > 0

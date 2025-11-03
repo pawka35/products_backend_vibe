@@ -5,7 +5,7 @@ from database import engine, Base
 from auth.routers import auth_router
 from auth.routers.role_router import router as role_router # Добавляю обратно
 from app.admin import admin_router
-from products.routers import customer_router, executor_router, search_router
+from products.routers import customer_router, executor_router
 from auth.utils.admin_init import ensure_admin_exists, ensure_basic_roles
 from utils.logging_config import setup_logging
 from middleware.logging_middleware import LoggingMiddleware
@@ -39,7 +39,6 @@ app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(customer_router)
 app.include_router(executor_router)
-app.include_router(search_router)
 app.include_router(role_router)
 
 @app.get("/")
