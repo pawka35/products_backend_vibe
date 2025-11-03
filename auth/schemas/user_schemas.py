@@ -92,3 +92,21 @@ class PasswordChange(BaseModel):
         if not is_valid:
             raise ValueError(error_message)
         return v
+
+class UserProfileUpdate(BaseModel):
+    """Схема для обновления профиля пользователя (без изменения роли)"""
+    username: Optional[str] = Field(None, min_length=3, max_length=50, description="Новое имя пользователя")
+    email: Optional[EmailStr] = Field(None, description="Новый email")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "username": "new_username",
+                "email": "newemail@example.com"
+            }
+        }
+
+class UserUpdateResponse(BaseModel):
+    """Схема ответа после обновления данных пользователя"""
+    message: str
+    user: UserResponse

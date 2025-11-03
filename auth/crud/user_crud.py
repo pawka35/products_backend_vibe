@@ -60,3 +60,43 @@ def authenticate_user(db: Session, username: str, password: str):
 
 def get_users_by_role(db: Session, role: UserRole):
     return db.query(User).filter(User.role == role).all()
+
+def update_user_profile(db: Session, user_id: int, username: str = None, email: str = None):
+    """Обновление профиля пользователя (username и/или email)"""
+    db_user = get_user(db, user_id)
+    if not db_user:
+        return None
+    
+    # Проверяем, если меняется username, что он уникален
+    if username and username != db_user.username:
+        existing_user = get_user_by_username(db, username)
+        if existing_user:
+            raise ValueError("Пользователь с таким именем уже существует")
+        db_user.username = username
+    
+    # Проверяем, если меняется email, что он уникален
+    if email and email != db_user.email:
+        existing_email = get_user_by_email(db, email)
+        if existing_email:
+            raise ValueError("Пользователь с таким email уже существует")
+        db_user.email = email
+    
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+def change_user_password_with_verification(db: Session, user_id: int, current_password: str, new_password: str):
+    """Изменение пароля пользователя с проверкой текущего пароля"""
+    db_user = get_user(db, user_id)
+    if not db_user:
+        return None
+    
+    # Проверяем текущий пароль
+    if not verify_password(current_password, db_user.hashed_password):
+        raise ValueError("Неверный текущий пароль")
+    
+    # Устанавливаем новый пароль
+    db_user.hashed_password = get_password_hash(new_password)
+    db.commit()
+    db.refresh(db_user)
+    return db_user

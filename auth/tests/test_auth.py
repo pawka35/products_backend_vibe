@@ -55,5 +55,165 @@ def test_auth_flow():
     print("\n" + "=" * 50)
     print("Тест завершен успешно! 🎉")
 
+def test_user_profile_update():
+    """Тест обновления профиля и пароля пользователя"""
+    
+    print("\nТест обновления профиля пользователя")
+    print("=" * 50)
+    
+    # 1. Создаем тестового пользователя
+    print("1. Создание тестового пользователя...")
+    import random
+    test_suffix = random.randint(1000, 9999)
+    user_data = {
+        "username": f"profiletest_{test_suffix}",
+        "email": f"profiletest_{test_suffix}@example.com",
+        "password": "TestPass123!",
+        "role": "customer"
+    }
+    
+    response = requests.post(f"{BASE_URL}/auth/register", json=user_data)
+    if response.status_code != 200:
+        print(f"   Ошибка регистрации: {response.text}")
+        return
+    
+    print(f"   Пользователь создан: {user_data['username']}")
+    
+    # 2. Получаем токен
+    print("\n2. Получение токена...")
+    login_data = {
+        "username": user_data['username'],
+        "password": user_data['password']
+    }
+    
+    response = requests.post(f"{BASE_URL}/auth/token", data=login_data)
+    if response.status_code != 200:
+        print(f"   Ошибка получения токена: {response.text}")
+        return
+    
+    token = response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    print("   Токен получен")
+    
+    # 3. Обновляем username
+    print("\n3. Обновление username...")
+    new_username = f"updated_{test_suffix}"
+    update_data = {
+        "username": new_username
+    }
+    
+    response = requests.put(f"{BASE_URL}/auth/me", json=update_data, headers=headers)
+    if response.status_code == 200:
+        result = response.json()
+        print(f"   Username обновлен: {result['user']['username']}")
+    else:
+        print(f"   Ошибка обновления username: {response.text}")
+    
+    # 4. Обновляем email
+    print("\n4. Обновление email...")
+    new_email = f"updated_{test_suffix}@example.com"
+    update_data = {
+        "email": new_email
+    }
+    
+    response = requests.put(f"{BASE_URL}/auth/me", json=update_data, headers=headers)
+    if response.status_code == 200:
+        result = response.json()
+        print(f"   Email обновлен: {result['user']['email']}")
+    else:
+        print(f"   Ошибка обновления email: {response.text}")
+    
+    # 5. Обновляем и username и email одновременно
+    print("\n5. Обновление username и email одновременно...")
+    new_username2 = f"updated2_{test_suffix}"
+    new_email2 = f"updated2_{test_suffix}@example.com"
+    update_data = {
+        "username": new_username2,
+        "email": new_email2
+    }
+    
+    response = requests.put(f"{BASE_URL}/auth/me", json=update_data, headers=headers)
+    if response.status_code == 200:
+        result = response.json()
+        print(f"   Оба поля обновлены:")
+        print(f"   - Username: {result['user']['username']}")
+        print(f"   - Email: {result['user']['email']}")
+    else:
+        print(f"   Ошибка обновления: {response.text}")
+    
+    # 6. Попытка обновить без указания полей (должна быть ошибка)
+    print("\n6. Попытка обновления без указания полей...")
+    response = requests.put(f"{BASE_URL}/auth/me", json={}, headers=headers)
+    if response.status_code == 400:
+        print(f"   Ожидаемая ошибка: {response.json()['detail']}")
+    else:
+        print(f"   Неожиданный результат: {response.status_code}")
+    
+    # 7. Изменение пароля
+    print("\n7. Изменение пароля...")
+    password_data = {
+        "current_password": "TestPass123!",
+        "new_password": "NewTestPass456!"
+    }
+    
+    response = requests.put(f"{BASE_URL}/auth/me/password", json=password_data, headers=headers)
+    if response.status_code == 200:
+        result = response.json()
+        print(f"   Пароль изменен успешно: {result['message']}")
+    else:
+        print(f"   Ошибка изменения пароля: {response.text}")
+    
+    # 8. Проверяем вход со старым паролем (должно быть отклонено)
+    print("\n8. Попытка входа со старым паролем...")
+    old_login_data = {
+        "username": new_username2,
+        "password": "TestPass123!"
+    }
+    
+    response = requests.post(f"{BASE_URL}/auth/token", data=old_login_data)
+    if response.status_code == 401:
+        print("   Правильно: вход со старым паролем отклонен")
+    else:
+        print(f"   Неожиданный результат: {response.status_code}")
+    
+    # 9. Проверяем вход с новым паролем
+    print("\n9. Вход с новым паролем...")
+    new_login_data = {
+        "username": new_username2,
+        "password": "NewTestPass456!"
+    }
+    
+    response = requests.post(f"{BASE_URL}/auth/token", data=new_login_data)
+    if response.status_code == 200:
+        print("   Вход с новым паролем успешен")
+        new_token = response.json()["access_token"]
+        new_headers = {"Authorization": f"Bearer {new_token}"}
+        
+        # Проверяем профиль с новым токеном
+        response = requests.get(f"{BASE_URL}/auth/me", headers=new_headers)
+        if response.status_code == 200:
+            user_info = response.json()
+            print(f"   Профиль получен: {user_info['username']}")
+    else:
+        print(f"   Ошибка входа: {response.text}")
+    
+    # 10. Попытка изменить пароль с неверным текущим паролем
+    print("\n10. Попытка изменения пароля с неверным текущим паролем...")
+    wrong_password_data = {
+        "current_password": "WrongPassword123!",
+        "new_password": "AnotherPass789!"
+    }
+    
+    response = requests.put(f"{BASE_URL}/auth/me/password", json=wrong_password_data, headers=new_headers)
+    if response.status_code == 400:
+        print(f"   Ожидаемая ошибка: {response.json()['detail']}")
+    else:
+        print(f"   Неожиданный результат: {response.status_code}")
+    
+    print("\n" + "=" * 50)
+    print("Тест обновления профиля завершен успешно! 🎉")
+
 if __name__ == "__main__":
     test_auth_flow()
+    print("\n")
+    test_user_profile_update()

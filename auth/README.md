@@ -54,6 +54,8 @@ auth/
 - `POST /auth/register` - Регистрация пользователя
 - `POST /auth/token` - Получение JWT токена
 - `GET /auth/me` - Информация о текущем пользователе
+- `PUT /auth/me` - Обновление профиля пользователя (username и/или email)
+- `PUT /auth/me/password` - Изменение пароля пользователя
 
 ### Управление ролями (только для администраторов)
 - `GET /admin/roles` - Список всех ролей
@@ -183,7 +185,112 @@ python auth/tests/test_admin_init.py
 
 ## 📊 Примеры использования
 
-### Создание роли
+### Регистрация и аутентификация
+
+#### Регистрация пользователя
+```bash
+curl -X POST "http://localhost:8000/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "john_doe",
+    "email": "john@example.com",
+    "password": "SecurePass123!",
+    "role": "customer"
+  }'
+```
+
+#### Получение токена
+```bash
+curl -X POST "http://localhost:8000/auth/token" \
+  -d "username=john_doe&password=SecurePass123!"
+```
+
+### Обновление профиля пользователя
+
+#### Изменение username
+```bash
+curl -X PUT "http://localhost:8000/auth/me" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "john_updated"
+  }'
+```
+
+**Ответ:**
+```json
+{
+    "message": "Профиль успешно обновлен",
+    "user": {
+        "id": 1,
+        "username": "john_updated",
+        "email": "john@example.com",
+        "role": "customer",
+        "is_active": true,
+        "created_at": "2024-01-01T12:00:00Z",
+        "updated_at": "2024-01-02T14:30:00Z"
+    }
+}
+```
+
+#### Изменение email
+```bash
+curl -X PUT "http://localhost:8000/auth/me" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "newemail@example.com"
+  }'
+```
+
+#### Изменение username и email одновременно
+```bash
+curl -X PUT "http://localhost:8000/auth/me" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "john_new",
+    "email": "john.new@example.com"
+  }'
+```
+
+### Изменение пароля
+
+```bash
+curl -X PUT "http://localhost:8000/auth/me/password" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "current_password": "SecurePass123!",
+    "new_password": "NewSecurePass456!"
+  }'
+```
+
+**Ответ:**
+```json
+{
+    "message": "Пароль успешно изменен",
+    "user": {
+        "id": 1,
+        "username": "john_new",
+        "email": "john.new@example.com",
+        "role": "customer",
+        "is_active": true,
+        "created_at": "2024-01-01T12:00:00Z",
+        "updated_at": "2024-01-02T15:00:00Z"
+    }
+}
+```
+
+**Особенности изменения пароля:**
+- ✅ Требуется текущий пароль для подтверждения
+- ✅ Новый пароль должен соответствовать требованиям безопасности
+- ✅ После изменения старый пароль перестает работать
+- ✅ Текущий токен остается валидным
+
+### Управление ролями
+
+#### Создание роли
 ```python
 # POST /admin/roles/
 {
@@ -193,7 +300,7 @@ python auth/tests/test_admin_init.py
 }
 ```
 
-### Назначение роли пользователю
+#### Назначение роли пользователю
 ```python
 # POST /admin/roles/users/assign
 {
@@ -202,7 +309,7 @@ python auth/tests/test_admin_init.py
 }
 ```
 
-### Получение ролей пользователя
+#### Получение ролей пользователя
 ```python
 # GET /admin/roles/users/1
 [
