@@ -18,7 +18,7 @@ def test_role_functionality():
     print("1. Получение токена для администратора...")
     admin_login = {
         "username": "admin",
-        "password": "admin123"
+        "password": "Admin123!"
     }
     
     try:

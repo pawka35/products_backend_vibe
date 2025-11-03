@@ -13,7 +13,7 @@ def test_role_management():
     print("1. Получение токена для администратора...")
     admin_login = {
         "username": "admin",
-        "password": "admin123"
+        "password": "Admin123!"
     }
     
     response = requests.post(f"{BASE_URL}/auth/token", data=admin_login)

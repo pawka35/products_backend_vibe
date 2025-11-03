@@ -13,7 +13,7 @@ def test_admin_functions():
     print("1. Получение токена для администратора...")
     admin_login = {
         "username": "admin",
-        "password": "admin123"
+        "password": "Admin123!"
     }
     
     response = requests.post(f"{BASE_URL}/auth/token", data=admin_login)
@@ -121,7 +121,7 @@ def test_admin_create_user():
     print("1. Получение токена для администратора...")
     admin_login = {
         "username": "admin",
-        "password": "admin123"
+        "password": "Admin123!"
     }
     
     response = requests.post(f"{BASE_URL}/auth/token", data=admin_login)

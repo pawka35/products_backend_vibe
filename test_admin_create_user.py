@@ -8,7 +8,7 @@ import sys
 
 BASE_URL = "http://localhost:8000"
 
-def get_admin_token(username="admin", password="admin123"):
+def get_admin_token(username="admin", password="Admin123!"):
     """Получить токен администратора"""
     print(f"🔐 Получение токена для {username}...")
     response = requests.post(

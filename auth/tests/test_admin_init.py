@@ -13,7 +13,7 @@ def test_admin_initialization():
     print("1. Проверка существования администратора...")
     admin_login = {
         "username": "admin",
-        "password": "admin123"
+        "password": "Admin123!"
     }
     
     response = requests.post(f"{BASE_URL}/auth/token", data=admin_login)
