@@ -416,8 +416,7 @@ async def cancel_order_endpoint(
         )
     
     # Отменяем заказ - меняем статус на CANCELLED
-    order_status_update = OrderStatusUpdate(status=OrderStatus.CANCELLED)
-    cancelled_order = update_order_status(db, order_id, order_status_update)
+    cancelled_order = update_order_status(db, order_id, OrderStatus.CANCELLED)
     
     if not cancelled_order:
         raise HTTPException(

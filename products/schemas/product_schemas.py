@@ -41,6 +41,10 @@ class OrderCreate(BaseModel):
 class OrderUpdate(BaseModel):
     status: Optional[OrderStatus] = None
 
+class OrderComplete(BaseModel):
+    """Схема для завершения заказа с необязательным комментарием"""
+    complete_comment: Optional[str] = None
+
 class Order(OrderBase):
     id: int
     customer_id: int
@@ -49,6 +53,7 @@ class Order(OrderBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
+    complete_comment: Optional[str] = None
     products: List[Product]
 
     class Config:

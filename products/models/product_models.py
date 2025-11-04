@@ -36,6 +36,7 @@ class Order(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     completed_at = Column(DateTime(timezone=True), nullable=True)
+    complete_comment = Column(Text, nullable=True)  # Комментарий исполнителя при завершении заказа
     
     # Связи
     customer = relationship("User", foreign_keys=[customer_id], back_populates="orders")

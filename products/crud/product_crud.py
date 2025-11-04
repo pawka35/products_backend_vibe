@@ -304,7 +304,7 @@ def get_orders_by_status(db: Session, status: OrderStatus, skip: int = 0, limit:
     """Получение заказов по статусу"""
     return db.query(Order).filter(Order.status == status).offset(skip).limit(limit).all()
 
-def update_order_status(db: Session, order_id: int, status: OrderStatus):
+def update_order_status(db: Session, order_id: int, status: OrderStatus, complete_comment: str = None):
     """Обновление статуса заказа"""
     db_order = get_order(db, order_id)
     if not db_order:
@@ -313,6 +313,9 @@ def update_order_status(db: Session, order_id: int, status: OrderStatus):
     db_order.status = status
     if status == OrderStatus.COMPLETED:
         db_order.completed_at = datetime.utcnow()
+        # Сохраняем комментарий при завершении заказа, если он предоставлен
+        if complete_comment is not None:
+            db_order.complete_comment = complete_comment
     
     db.commit()
     db.refresh(db_order)

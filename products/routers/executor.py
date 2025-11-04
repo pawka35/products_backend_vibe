@@ -10,6 +10,7 @@ from products.schemas import (
     OrderSummary,
     ProductPurchase,
     OrderStatusUpdate,
+    OrderComplete,
     ExecutorOrdersListResponse
 )
 from auth.utils import get_current_active_user
@@ -289,11 +290,16 @@ async def unmark_product_purchased(
 @router.put("/orders/{order_id}/complete", response_model=OrderSchema)
 async def complete_order(
     order_id: int,
+    complete_data: OrderComplete = None,
     current_user: UserModel = Depends(require_executor),
     db: Session = Depends(get_db)
 ):
     """
     Завершить заказ (только для исполнителей, если все продукты куплены)
+    
+    Параметры:
+    - **order_id**: ID заказа
+    - **complete_comment** (необязательно): Комментарий исполнителя о выполнении заказа
     """
     order = get_order(db, order_id)
     if not order:
@@ -319,39 +325,11 @@ async def complete_order(
             detail="Нельзя завершить заказ, пока не все продукты куплены"
         )
     
-    updated_order = update_order_status(db, order_id, OrderStatus.COMPLETED)
+    # Получаем комментарий из тела запроса, если он передан
+    complete_comment = complete_data.complete_comment if complete_data else None
+    
+    updated_order = update_order_status(db, order_id, OrderStatus.COMPLETED, complete_comment)
     return updated_order
-
-@router.get("/orders/status/{status}", response_model=List[OrderSummary])
-async def get_orders_by_status_executor(
-    status: OrderStatus,
-    skip: int = 0,
-    limit: int = 100,
-    current_user: UserModel = Depends(require_executor),
-    db: Session = Depends(get_db)
-):
-    """
-    Получение заказов по статусу (только для исполнителей)
-    
-    Исполнитель видит только заказы с указанным статусом, 
-    где он назначен исполнителем.
-    """
-    # Используем функцию с фильтрами, чтобы получить только заказы исполнителя
-    orders = get_executor_orders_with_filters(
-        db=db,
-        executor_id=current_user.id,
-        skip=skip,
-        limit=limit,
-        status=status
-    )
-    
-    order_summaries = []
-    for order in orders:
-        summary = get_order_summary(db, order.id)
-        if summary:
-            order_summaries.append(summary)
-    
-    return order_summaries
 
 @router.get("/customers", response_model=List[UserList])
 async def get_customers_list(
