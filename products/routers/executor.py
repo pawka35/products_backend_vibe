@@ -25,6 +25,8 @@ from products.crud import (
     get_executor_orders_with_filters,
     get_executor_orders_count_with_filters
 )
+from auth.crud import get_users_by_role
+from auth.schemas import UserList
 
 router = APIRouter(prefix="/executor", tags=["executor"])
 
@@ -350,3 +352,22 @@ async def get_orders_by_status_executor(
             order_summaries.append(summary)
     
     return order_summaries
+
+@router.get("/customers", response_model=List[UserList])
+async def get_customers_list(
+    current_user: UserModel = Depends(require_executor),
+    db: Session = Depends(get_db)
+):
+    """
+    Получение списка всех заказчиков (только для исполнителей)
+    
+    Возвращает список активных пользователей с ролью customer.
+    Используется для фильтрации заказов по заказчику.
+    """
+    # Получаем всех пользователей с ролью customer
+    customers = get_users_by_role(db, UserRole.CUSTOMER)
+    
+    # Фильтруем только активных пользователей
+    active_customers = [customer for customer in customers if customer.is_active]
+    
+    return active_customers
