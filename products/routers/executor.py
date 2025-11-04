@@ -295,11 +295,17 @@ async def complete_order(
     db: Session = Depends(get_db)
 ):
     """
-    Завершить заказ (только для исполнителей, если все продукты куплены)
+    Завершить заказ (только для исполнителей)
+    
+    Правила завершения:
+    - Если ВСЕ продукты куплены → можно завершить без комментария
+    - Если НЕ все продукты куплены → обязательно нужен комментарий с объяснением
     
     Параметры:
     - **order_id**: ID заказа
-    - **complete_comment** (необязательно): Комментарий исполнителя о выполнении заказа
+    - **complete_comment**: Комментарий исполнителя о выполнении заказа
+      - Необязателен, если все продукты куплены
+      - ОБЯЗАТЕЛЕН, если не все продукты куплены
     """
     order = get_order(db, order_id)
     if not order:
@@ -318,16 +324,22 @@ async def complete_order(
             detail="Можно завершить только активный заказ"
         )
     
-    # Проверяем, что все продукты куплены
-    if not check_order_completion(db, order_id):
-        raise HTTPException(
-            status_code=400, 
-            detail="Нельзя завершить заказ, пока не все продукты куплены"
-        )
-    
     # Получаем комментарий из тела запроса, если он передан
     complete_comment = complete_data.complete_comment if complete_data else None
     
+    # Проверяем, все ли продукты куплены
+    all_products_purchased = check_order_completion(db, order_id)
+    
+    # Если НЕ все продукты куплены, то комментарий ОБЯЗАТЕЛЕН
+    if not all_products_purchased:
+        if not complete_comment or not complete_comment.strip():
+            raise HTTPException(
+                status_code=400, 
+                detail="Невозможно завершить заказ, если не все продукты куплены. "
+                       "Необходимо указать комментарий с объяснением причины."
+            )
+    
+    # Завершаем заказ (с комментарием или без, в зависимости от ситуации)
     updated_order = update_order_status(db, order_id, OrderStatus.COMPLETED, complete_comment)
     return updated_order
 
