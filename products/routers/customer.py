@@ -372,6 +372,61 @@ async def copy_order_endpoint(
     
     return copied_order
 
+@router.post("/orders/{order_id}/cancel", response_model=OrderSchema)
+async def cancel_order_endpoint(
+    order_id: int,
+    current_user: UserModel = Depends(require_customer),
+    db: Session = Depends(get_db)
+):
+    """
+    Отмена заказа (только для заказчиков, только свои заказы)
+    
+    Отменить можно только заказы со статусом PENDING (новые заказы, которые еще не взяты в работу).
+    Заказы, которые уже в работе (IN_PROGRESS), выполнены (COMPLETED) 
+    или уже отменены (CANCELLED), отменить нельзя.
+    
+    При отмене заказ переводится в статус CANCELLED.
+    """
+    # Проверяем, что заказ существует
+    order = get_order(db, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Заказ не найден")
+    
+    # Проверяем, что заказ принадлежит текущему пользователю
+    if order.customer_id != current_user.id:
+        raise HTTPException(
+            status_code=403, 
+            detail="Доступ только к своим заказам"
+        )
+    
+    # Проверяем, что заказ можно отменить (только PENDING)
+    if order.status != OrderStatus.PENDING:
+        status_messages = {
+            OrderStatus.IN_PROGRESS: "Заказ уже взят в работу и не может быть отменен",
+            OrderStatus.COMPLETED: "Заказ уже выполнен и не может быть отменен",
+            OrderStatus.CANCELLED: "Заказ уже отменен"
+        }
+        detail_message = status_messages.get(
+            order.status, 
+            f"Заказ в статусе '{order.status.value}' не может быть отменен"
+        )
+        raise HTTPException(
+            status_code=400,
+            detail=detail_message
+        )
+    
+    # Отменяем заказ - меняем статус на CANCELLED
+    order_status_update = OrderStatusUpdate(status=OrderStatus.CANCELLED)
+    cancelled_order = update_order_status(db, order_id, order_status_update)
+    
+    if not cancelled_order:
+        raise HTTPException(
+            status_code=500,
+            detail="Ошибка при отмене заказа"
+        )
+    
+    return cancelled_order
+
 # Эндпоинты для сохраненных товаров
 @router.post("/products/saved", response_model=SavedProduct)
 async def create_saved_product_endpoint(
