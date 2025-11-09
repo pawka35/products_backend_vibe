@@ -16,8 +16,33 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+def get_password_hash(password: str) -> str:
+    """
+    Хеширует пароль с использованием bcrypt.
+    Bcrypt имеет ограничение на длину пароля - максимум 72 байта.
+    Если пароль длиннее, он будет обрезан до 72 байт.
+    """
+    if not isinstance(password, str):
+        raise ValueError("Password must be a string")
+    
+    # Bcrypt ограничивает длину пароля 72 байтами
+    # Преобразуем пароль в байты для проверки длины
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        # Обрезаем пароль до 72 байт
+        password = password_bytes[:72].decode('utf-8', errors='ignore')
+    
+    try:
+        return pwd_context.hash(password)
+    except Exception as e:
+        # Если все еще ошибка, пробуем обрезать до безопасной длины
+        if "longer than 72" in str(e).lower() or "72 bytes" in str(e).lower():
+            # Безопасная длина для пароля (меньше 72 байт с учетом кодировки)
+            safe_length = 70
+            password_bytes = password.encode('utf-8')[:safe_length]
+            password = password_bytes.decode('utf-8', errors='ignore')
+            return pwd_context.hash(password)
+        raise
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()

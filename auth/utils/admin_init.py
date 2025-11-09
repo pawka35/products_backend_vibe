@@ -7,9 +7,24 @@ from database import get_db
 from auth.models.role_models import Role
 
 def generate_secure_password(length: int = 16) -> str:
-    """Генерирует безопасный пароль"""
+    """
+    Генерирует безопасный пароль.
+    Bcrypt имеет ограничение на длину пароля - максимум 72 байта.
+    Для безопасности используем длину не более 70 символов (ASCII).
+    """
+    # Ограничиваем длину до 70 символов для безопасности (bcrypt ограничение - 72 байта)
+    if length > 70:
+        length = 70
+    
     alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
     password = ''.join(secrets.choice(alphabet) for _ in range(length))
+    
+    # Дополнительная проверка: убеждаемся, что пароль не превышает 72 байта
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        # Обрезаем до 72 байт
+        password = password_bytes[:72].decode('utf-8', errors='ignore')
+    
     return password
 
 def create_initial_admin(db: Session) -> tuple[str, str]:
