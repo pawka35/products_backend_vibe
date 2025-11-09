@@ -21,14 +21,15 @@ services:
       - --collation-server=utf8mb4_unicode_ci
       - --innodb-buffer-pool-size=128M
       - --max-connections=100
+      - --skip-name-resolve
     networks:
       - app_network
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 40s
+      retries: 10
+      start_period: 60s
 
   # FastAPI приложение
   fastapi:
