@@ -40,9 +40,22 @@ def create_initial_admin(db: Session) -> tuple[str, str]:
     if existing_admin:
         return None, None  # Администратор уже существует
     
-    # Генерируем безопасный пароль
+    # Генерируем безопасный пароль (максимум 70 символов из-за ограничения bcrypt)
     password = generate_secure_password(20)
-    hashed_password = get_password_hash(password)
+    
+    # Дополнительная проверка длины пароля перед хешированием
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        print(f"⚠️  Предупреждение: пароль слишком длинный ({len(password_bytes)} байт), обрезаем до 72 байт")
+        password = password_bytes[:72].decode('utf-8', errors='ignore')
+    
+    try:
+        hashed_password = get_password_hash(password)
+    except Exception as e:
+        print(f"❌ Ошибка хеширования пароля: {e}")
+        # Пробуем с более коротким паролем
+        password = generate_secure_password(16)
+        hashed_password = get_password_hash(password)
     
     # Создаем администратора
     admin_user = User(
