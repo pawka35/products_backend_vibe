@@ -15,23 +15,50 @@ from middleware.logging_middleware import LoggingMiddleware
 # Настраиваем логирование
 setup_logging()
 
-# Создаем таблицы в базе данных
-Base.metadata.create_all(bind=engine)
+# Функция инициализации базы данных
+def initialize_database():
+    """Инициализация базы данных с обработкой ошибок"""
+    try:
+        print("🔍 Подключение к базе данных...")
+        # Создаем таблицы в базе данных
+        Base.metadata.create_all(bind=engine)
+        print("✅ Таблицы созданы/проверены")
+        
+        # Инициализируем базовые роли в таблице roles (для множественных ролей)
+        print("🔍 Инициализация системы множественных ролей...")
+        db = SessionLocal()
+        try:
+            ensure_role_models(db)
+            print("✅ Система множественных ролей инициализирована")
+        except Exception as e:
+            print(f"⚠️  Ошибка при инициализации ролей: {e}")
+        finally:
+            db.close()
+        
+        # Инициализируем администратора и базовые роли при запуске
+        print("🔍 Проверяем наличие администратора в системе...")
+        try:
+            ensure_admin_exists()
+            print("✅ Администратор проверен/создан")
+        except Exception as e:
+            print(f"⚠️  Ошибка при проверке администратора: {e}")
+        
+        print("🔍 Проверяем наличие базовых ролей в системе...")
+        try:
+            ensure_basic_roles()
+            print("✅ Базовые роли проверены/созданы")
+        except Exception as e:
+            print(f"⚠️  Ошибка при проверке базовых ролей: {e}")
+            
+    except Exception as e:
+        print(f"❌ Критическая ошибка при инициализации базы данных: {e}")
+        import traceback
+        traceback.print_exc()
+        # Не прерываем запуск приложения, возможно БД еще не готова
+        print("⚠️  Продолжаем запуск приложения, инициализация БД будет повторена...")
 
-# Инициализируем базовые роли в таблице roles (для множественных ролей)
-print("🔍 Инициализация системы множественных ролей...")
-db = SessionLocal()
-try:
-    ensure_role_models(db)
-finally:
-    db.close()
-
-# Инициализируем администратора и базовые роли при запуске
-print("🔍 Проверяем наличие администратора в системе...")
-ensure_admin_exists()
-
-print("🔍 Проверяем наличие базовых ролей в системе...")
-ensure_basic_roles()
+# Выполняем инициализацию
+initialize_database()
 
 app = FastAPI(
     title="FastAPI Auth System", 
