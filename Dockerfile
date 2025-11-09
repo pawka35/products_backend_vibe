@@ -26,6 +26,7 @@ FROM python:3.11-slim
 # Устанавливаем runtime зависимости
 RUN apt-get update && apt-get install -y \
     curl \
+    netcat-openbsd \
     libffi8 \
     libssl3 \
     && rm -rf /var/lib/apt/lists/*
