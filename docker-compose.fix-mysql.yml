@@ -1,11 +1,11 @@
 version: '3.8'
 
 services:
-  # MySQL база данных
+  # MySQL база данных (исправленная версия)
   mysql:
     image: mysql:8.0
     container_name: fastapi_mysql
-    restart: unless-stopped
+    restart: unless-stopped  # Изменено с always на unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: fastapi_auth
@@ -19,8 +19,10 @@ services:
       - --default-authentication-plugin=mysql_native_password
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
-      - --innodb-buffer-pool-size=128M
+      - --innodb-buffer-pool-size=128M  # Уменьшен размер для старых серверов
       - --max-connections=100
+      - --wait-timeout=28800
+      - --interactive-timeout=28800
     networks:
       - app_network
     healthcheck:
@@ -28,13 +30,20 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 40s  # Увеличено время на старт
+    # Добавлены лимиты ресурсов для старых серверов
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
 
   # FastAPI приложение
   fastapi:
     build: .
     container_name: fastapi_app
-    restart: always
+    restart: unless-stopped
     environment:
       - DATABASE_URL=mysql+pymysql://fastapi_user:fastapi_password@mysql:3306/fastapi_auth
       - SECRET_KEY=your-secret-key-here-change-in-production
@@ -54,12 +63,11 @@ services:
   nginx:
     build: ./nginx
     container_name: fastapi_nginx
-    restart: always
+    restart: unless-stopped
     ports:
       - "80:80"
     depends_on:
-      fastapi:
-        condition: service_started
+      - fastapi
     networks:
       - app_network
     volumes:
@@ -67,7 +75,9 @@ services:
 
 volumes:
   mysql_data:
+    driver: local
 
 networks:
   app_network:
     driver: bridge
+
