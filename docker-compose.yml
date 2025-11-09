@@ -1,9 +1,10 @@
 version: '3.8'
 
 services:
-  # MySQL база данных
+  # MariaDB база данных (совместима с MySQL, работает на старых CPU)
+  # Используется вместо MySQL 8.0 из-за совместимости со старыми процессорами (x86-64-v2)
   mysql:
-    image: mysql:8.0
+    image: mariadb:10.5
     container_name: fastapi_mysql
     restart: unless-stopped
     environment:
@@ -16,7 +17,6 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     command: 
-      - --default-authentication-plugin=mysql_native_password
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
       - --innodb-buffer-pool-size=128M
@@ -24,7 +24,7 @@ services:
     networks:
       - app_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "fastapi_user", "-pfastapi_password"]
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -1,5 +1,11 @@
 # Быстрое решение проблемы с MySQL на удаленном сервере
 
+## ⚠️ Важно: Теперь используется MariaDB 10.5 по умолчанию
+
+Основной `docker-compose.yml` использует **MariaDB 10.5** вместо MySQL 8.0 для совместимости со старыми процессорами (x86-64-v2).
+
+MariaDB полностью совместим с MySQL - никаких изменений в коде приложения не требуется.
+
 ## Шаг 1: Диагностика
 
 Выполните на сервере:
@@ -39,15 +45,15 @@ docker compose up -d mysql
 docker compose logs -f mysql
 ```
 
-### Решение 2: Использовать исправленную конфигурацию
+### Решение 2: Использовать исправленную конфигурацию (MariaDB с оптимизациями)
 
 ```bash
-# Используйте файл с оптимизированными настройками
-docker compose -f docker compose.fix-mysql.yml down
-docker compose -f docker compose.fix-mysql.yml up -d mysql
+# Используйте файл с оптимизированными настройками MariaDB
+docker compose -f docker-compose.fix-mysql.yml down
+docker compose -f docker-compose.fix-mysql.yml up -d mysql
 
 # Проверьте статус
-docker compose -f docker compose.fix-mysql.yml ps mysql
+docker compose -f docker-compose.fix-mysql.yml ps mysql
 ```
 
 ### Решение 3: Увеличить время на старт
@@ -80,24 +86,19 @@ free -h
 # Проверьте диск
 df -h
 
-# Если памяти меньше 512MB, используйте облегченную версию MySQL
-docker compose -f docker compose.fix-mysql.yml up -d mysql
+# Если памяти меньше 512MB, используйте облегченную версию MariaDB
+docker compose -f docker-compose.fix-mysql.yml up -d mysql
 ```
 
-### Решение 5: Использовать MySQL 5.7 (для очень старых серверов)
+### Решение 5: Использовать MySQL 5.7 (для очень старых серверов, если MariaDB не работает)
 
-Создайте `docker compose.mysql57.yml`:
-```yaml
-version: '3.8'
-services:
-  mysql:
-    image: mysql:5.7
-    # ... остальные настройки такие же
-```
+⚠️ **Внимание**: MySQL 5.7 достиг End of Life. Используйте только если MariaDB не работает.
+
+Файл `docker-compose.mysql57.yml` уже создан в проекте.
 
 Запустите:
 ```bash
-docker compose -f docker compose.mysql57.yml up -d mysql
+docker compose -f docker-compose.mysql57.yml up -d mysql
 ```
 
 ## Шаг 3: Проверка

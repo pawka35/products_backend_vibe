@@ -1,11 +1,12 @@
 version: '3.8'
 
 services:
-  # MariaDB база данных (исправленная версия, совместима со старыми CPU)
+  # MySQL 5.7 база данных (для очень старых серверов)
+  # ВНИМАНИЕ: MySQL 5.7 достиг End of Life. Используйте только если MariaDB не работает.
   mysql:
-    image: mariadb:10.5
+    image: mysql:5.7
     container_name: fastapi_mysql
-    restart: unless-stopped  # Изменено с always на unless-stopped
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: fastapi_auth
@@ -18,25 +19,16 @@ services:
     command: 
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
-      - --innodb-buffer-pool-size=128M  # Уменьшен размер для старых серверов
+      - --innodb-buffer-pool-size=128M
       - --max-connections=100
-      - --wait-timeout=28800
-      - --interactive-timeout=28800
     networks:
       - app_network
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "fastapi_user", "-pfastapi_password"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 40s  # Увеличено время на старт
-    # Добавлены лимиты ресурсов для старых серверов
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 256M
+      start_period: 40s
 
   # FastAPI приложение
   fastapi:

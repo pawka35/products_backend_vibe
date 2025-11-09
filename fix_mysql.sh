@@ -49,29 +49,29 @@ fi
 # Шаг 3: Выбор метода исправления
 echo ""
 echo "Выберите метод исправления:"
-echo "1) Стандартный (обновленный docker-compose.yml)"
-echo "2) Исправленная конфигурация (docker-compose.fix-mysql.yml)"
-echo "3) MariaDB (более легкая для старых серверов)"
-echo "4) MySQL 5.7 (для очень старых серверов)"
+echo "1) Стандартный (MariaDB 10.5 - рекомендуется)"
+echo "2) Исправленная конфигурация (MariaDB с оптимизациями)"
+echo "3) MySQL 5.7 (для очень старых серверов, если MariaDB не работает)"
+echo "4) Переключиться на существующий docker-compose.mariadb.yml"
 read -p "Ваш выбор (1-4): " choice
 
 case $choice in
     1)
         COMPOSE_FILE="docker-compose.yml"
-        print_success "Выбран стандартный метод"
+        print_success "Выбран стандартный метод (MariaDB 10.5)"
         ;;
     2)
         COMPOSE_FILE="docker-compose.fix-mysql.yml"
-        print_success "Выбрана исправленная конфигурация"
+        print_success "Выбрана исправленная конфигурация (MariaDB с оптимизациями)"
         ;;
     3)
-        COMPOSE_FILE="docker-compose.mariadb.yml"
-        print_success "Выбран MariaDB"
+        COMPOSE_FILE="docker-compose.mysql57.yml"
+        print_warning "Используется MySQL 5.7 (End of Life, используйте только если MariaDB не работает)"
+        print_success "Выбран MySQL 5.7"
         ;;
     4)
-        print_warning "MySQL 5.7 требует ручной настройки"
-        print_warning "Создайте файл docker-compose.mysql57.yml вручную"
-        exit 1
+        COMPOSE_FILE="docker-compose.mariadb.yml"
+        print_success "Выбран docker-compose.mariadb.yml"
         ;;
     *)
         print_error "Неверный выбор"
