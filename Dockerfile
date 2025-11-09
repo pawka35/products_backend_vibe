@@ -37,13 +37,18 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Создаем пользователя для безопасности
 RUN useradd --create-home --shell /bin/bash app
-USER app
 
 # Устанавливаем рабочую директорию
 WORKDIR /app
 
 # Копируем код приложения
 COPY --chown=app:app . .
+
+# Создаем директорию для логов с правильными правами
+RUN mkdir -p /app/logs && chown -R app:app /app/logs && chmod -R 755 /app/logs
+
+# Переключаемся на пользователя app
+USER app
 
 # Открываем порт
 EXPOSE 8000

@@ -1,6 +1,7 @@
 import logging
 import json
 import sys
+import os
 from datetime import datetime
 from typing import Any, Dict, Optional
 from config import settings
@@ -39,6 +40,24 @@ class JSONFormatter(logging.Formatter):
         
         return json.dumps(log_entry, ensure_ascii=False)
 
+def _create_file_handler(log_file: str, formatter: logging.Formatter) -> Optional[logging.FileHandler]:
+    """Создает файловый обработчик с обработкой ошибок"""
+    try:
+        # Создаем директорию logs, если её нет
+        logs_dir = 'logs'
+        if not os.path.exists(logs_dir):
+            try:
+                os.makedirs(logs_dir, mode=0o755, exist_ok=True)
+            except (PermissionError, OSError):
+                return None
+        
+        # Пытаемся создать файловый обработчик
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setFormatter(formatter)
+        return file_handler
+    except (PermissionError, OSError):
+        return None
+
 class SecurityLogger:
     """Логгер для событий безопасности"""
     
@@ -46,10 +65,10 @@ class SecurityLogger:
         self.logger = logging.getLogger('security')
         self.logger.setLevel(logging.INFO)
         
-        # Добавляем обработчик для файла безопасности
-        security_handler = logging.FileHandler('logs/security.log')
-        security_handler.setFormatter(JSONFormatter())
-        self.logger.addHandler(security_handler)
+        # Добавляем обработчик для файла безопасности (с обработкой ошибок)
+        security_handler = _create_file_handler('logs/security.log', JSONFormatter())
+        if security_handler:
+            self.logger.addHandler(security_handler)
     
     def log_login_attempt(self, username: str, ip_address: str, success: bool, user_id: Optional[int] = None):
         """Логирование попытки входа"""
@@ -104,10 +123,10 @@ class APILogger:
         self.logger = logging.getLogger('api')
         self.logger.setLevel(logging.INFO)
         
-        # Добавляем обработчик для файла API
-        api_handler = logging.FileHandler('logs/api.log')
-        api_handler.setFormatter(JSONFormatter())
-        self.logger.addHandler(api_handler)
+        # Добавляем обработчик для файла API (с обработкой ошибок)
+        api_handler = _create_file_handler('logs/api.log', JSONFormatter())
+        if api_handler:
+            self.logger.addHandler(api_handler)
     
     def log_request(self, method: str, endpoint: str, user_id: Optional[int], 
                    ip_address: str, execution_time: float, status_code: int):
@@ -131,10 +150,10 @@ class BusinessLogger:
         self.logger = logging.getLogger('business')
         self.logger.setLevel(logging.INFO)
         
-        # Добавляем обработчик для файла бизнес-событий
-        business_handler = logging.FileHandler('logs/business.log')
-        business_handler.setFormatter(JSONFormatter())
-        self.logger.addHandler(business_handler)
+        # Добавляем обработчик для файла бизнес-событий (с обработкой ошибок)
+        business_handler = _create_file_handler('logs/business.log', JSONFormatter())
+        if business_handler:
+            self.logger.addHandler(business_handler)
     
     def log_order_created(self, order_id: int, customer_id: int, executor_id: int):
         """Логирование создания заказа"""
@@ -190,10 +209,14 @@ def setup_logging():
         ))
     root_logger.addHandler(console_handler)
     
-    # Добавляем обработчик для файла
-    file_handler = logging.FileHandler('logs/app.log')
-    file_handler.setFormatter(JSONFormatter())
-    root_logger.addHandler(file_handler)
+    # Добавляем обработчик для файла (с обработкой ошибок)
+    file_handler = _create_file_handler('logs/app.log', JSONFormatter())
+    if file_handler:
+        root_logger.addHandler(file_handler)
+        print(f"✅ Файловый логгер настроен: logs/app.log")
+    else:
+        print("⚠️  Не удалось создать файловый обработчик логов")
+        print("⚠️  Логи будут выводиться только в консоль")
     
     # Создаем специализированные логгеры
     security_logger = SecurityLogger()
