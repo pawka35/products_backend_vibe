@@ -44,18 +44,50 @@ def _create_file_handler(log_file: str, formatter: logging.Formatter) -> Optiona
     """Создает файловый обработчик с обработкой ошибок"""
     try:
         # Создаем директорию logs, если её нет
-        logs_dir = 'logs'
+        logs_dir = os.path.dirname(log_file) or 'logs'
         if not os.path.exists(logs_dir):
             try:
-                os.makedirs(logs_dir, mode=0o755, exist_ok=True)
-            except (PermissionError, OSError):
+                os.makedirs(logs_dir, mode=0o777, exist_ok=True)
+                print(f"✅ Создана директория {logs_dir}")
+            except (PermissionError, OSError) as e:
+                print(f"⚠️  Не удалось создать директорию {logs_dir}: {e}")
+                # Попробуем проверить, существует ли директория
+                if not os.path.exists(logs_dir):
+                    return None
+        
+        # Проверяем права на запись в директорию
+        if not os.access(logs_dir, os.W_OK):
+            print(f"⚠️  Нет прав на запись в директорию {logs_dir}")
+            # Попробуем изменить права
+            try:
+                os.chmod(logs_dir, 0o777)
+                print(f"✅ Изменены права на директорию {logs_dir}")
+            except (PermissionError, OSError) as e:
+                print(f"⚠️  Не удалось изменить права на директорию {logs_dir}: {e}")
                 return None
         
         # Пытаемся создать файловый обработчик
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(formatter)
-        return file_handler
-    except (PermissionError, OSError):
+        try:
+            file_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
+            file_handler.setFormatter(formatter)
+            print(f"✅ Создан файловый обработчик: {log_file}")
+            return file_handler
+        except (PermissionError, OSError) as e:
+            print(f"⚠️  Не удалось создать файловый обработчик {log_file}: {e}")
+            # Попробуем проверить, можно ли создать файл вручную
+            try:
+                test_file = os.path.join(logs_dir, '.test_write')
+                with open(test_file, 'w') as f:
+                    f.write('test')
+                os.remove(test_file)
+                print(f"✅ Права на запись в директорию {logs_dir} есть, но файловый обработчик не создался")
+            except Exception as test_e:
+                print(f"⚠️  Тест записи в директорию {logs_dir} не прошел: {test_e}")
+            return None
+    except Exception as e:
+        print(f"⚠️  Неожиданная ошибка при создании файлового обработчика {log_file}: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 class SecurityLogger:
@@ -210,13 +242,29 @@ def setup_logging():
     root_logger.addHandler(console_handler)
     
     # Добавляем обработчик для файла (с обработкой ошибок)
-    file_handler = _create_file_handler('logs/app.log', JSONFormatter())
+    # Пробуем разные пути для файла логов
+    log_paths = [
+        'logs/app.log',  # Относительный путь
+        '/app/logs/app.log',  # Абсолютный путь в контейнере
+        os.path.join(os.getcwd(), 'logs', 'app.log')  # Полный путь от текущей директории
+    ]
+    
+    file_handler = None
+    for log_path in log_paths:
+        file_handler = _create_file_handler(log_path, JSONFormatter())
+        if file_handler:
+            break
+    
     if file_handler:
         root_logger.addHandler(file_handler)
-        print(f"✅ Файловый логгер настроен: logs/app.log")
+        print(f"✅ Файловый логгер настроен: {file_handler.baseFilename}")
     else:
-        print("⚠️  Не удалось создать файловый обработчик логов")
+        print("⚠️  Не удалось создать файловый обработчик логов после попыток:")
+        for log_path in log_paths:
+            print(f"   - {log_path}")
         print("⚠️  Логи будут выводиться только в консоль")
+        print(f"⚠️  Текущая рабочая директория: {os.getcwd()}")
+        print(f"⚠️  Существующие файлы/директории: {os.listdir('.') if os.path.exists('.') else 'N/A'}")
     
     # Создаем специализированные логгеры
     security_logger = SecurityLogger()

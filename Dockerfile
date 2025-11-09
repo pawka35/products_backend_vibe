@@ -45,7 +45,11 @@ WORKDIR /app
 COPY --chown=app:app . .
 
 # Создаем директорию для логов с правильными правами
-RUN mkdir -p /app/logs && chown -R app:app /app/logs && chmod -R 755 /app/logs
+RUN mkdir -p /app/logs && chown -R app:app /app/logs && chmod -R 777 /app/logs
+
+# Копируем скрипт инициализации логов
+COPY --chown=app:app init_logs.sh /app/init_logs.sh
+RUN chmod +x /app/init_logs.sh
 
 # Переключаемся на пользователя app
 USER app
@@ -53,5 +57,5 @@ USER app
 # Открываем порт
 EXPOSE 8000
 
-# Команда запуска
-CMD ["python", "main.py"]
+# Команда запуска с инициализацией логов
+CMD ["/bin/bash", "-c", "/app/init_logs.sh && python main.py"]
