@@ -114,12 +114,12 @@ python main.py
 
 1. **Сборка и запуск**
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
 2. **Остановка**
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ## 📚 API Endpoints

@@ -11,10 +11,10 @@ cd /path/to/your/project
 Или вручную:
 ```bash
 # Проверьте логи
-docker-compose logs mysql
+docker compose logs mysql
 
 # Проверьте статус
-docker-compose ps mysql
+docker compose ps mysql
 
 # Проверьте порт
 netstat -tuln | grep 3307
@@ -26,35 +26,35 @@ netstat -tuln | grep 3307
 
 ```bash
 # Остановите и удалите контейнер
-docker-compose stop mysql
-docker-compose rm -f mysql
+docker compose stop mysql
+docker compose rm -f mysql
 
 # Удалите volume (данные будут потеряны!)
 docker volume rm $(docker volume ls -q | grep mysql)
 
 # Запустите заново
-docker-compose up -d mysql
+docker compose up -d mysql
 
 # Проверьте логи
-docker-compose logs -f mysql
+docker compose logs -f mysql
 ```
 
 ### Решение 2: Использовать исправленную конфигурацию
 
 ```bash
 # Используйте файл с оптимизированными настройками
-docker-compose -f docker-compose.fix-mysql.yml down
-docker-compose -f docker-compose.fix-mysql.yml up -d mysql
+docker compose -f docker compose.fix-mysql.yml down
+docker compose -f docker compose.fix-mysql.yml up -d mysql
 
 # Проверьте статус
-docker-compose -f docker-compose.fix-mysql.yml ps mysql
+docker compose -f docker compose.fix-mysql.yml ps mysql
 ```
 
 ### Решение 3: Увеличить время на старт
 
 Если MySQL долго инициализируется, временно отключите healthcheck:
 
-Измените `docker-compose.yml`:
+Измените `docker compose.yml`:
 ```yaml
 mysql:
   # ... другие настройки
@@ -68,7 +68,7 @@ mysql:
 
 Затем:
 ```bash
-docker-compose up -d mysql
+docker compose up -d mysql
 ```
 
 ### Решение 4: Проверить ресурсы сервера
@@ -81,12 +81,12 @@ free -h
 df -h
 
 # Если памяти меньше 512MB, используйте облегченную версию MySQL
-docker-compose -f docker-compose.fix-mysql.yml up -d mysql
+docker compose -f docker compose.fix-mysql.yml up -d mysql
 ```
 
 ### Решение 5: Использовать MySQL 5.7 (для очень старых серверов)
 
-Создайте `docker-compose.mysql57.yml`:
+Создайте `docker compose.mysql57.yml`:
 ```yaml
 version: '3.8'
 services:
@@ -97,7 +97,7 @@ services:
 
 Запустите:
 ```bash
-docker-compose -f docker-compose.mysql57.yml up -d mysql
+docker compose -f docker compose.mysql57.yml up -d mysql
 ```
 
 ## Шаг 3: Проверка
@@ -106,12 +106,12 @@ docker-compose -f docker-compose.mysql57.yml up -d mysql
 
 ```bash
 # Статус контейнера
-docker-compose ps mysql
+docker compose ps mysql
 
 # Должно быть: "Up" и "healthy"
 
 # Логи (должны быть без ошибок)
-docker-compose logs mysql --tail=50
+docker compose logs mysql --tail=50
 
 # Подключение к MySQL
 docker exec -it fastapi_mysql mysql -u fastapi_user -pfastapi_password -e "SHOW DATABASES;"
@@ -134,13 +134,13 @@ sudo mysql -e "GRANT ALL PRIVILEGES ON fastapi_auth.* TO 'fastapi_user'@'localho
 sudo mysql -e "FLUSH PRIVILEGES;"
 ```
 
-Измените `docker-compose.yml`:
+Измените `docker compose.yml`:
 - Удалите сервис `mysql`
 - Измените `DATABASE_URL` в FastAPI на `mysql+pymysql://fastapi_user:fastapi_password@host.docker.internal:3306/fastapi_auth`
 
 ### Вариант B: Использовать MariaDB (легче для старых серверов)
 
-Замените MySQL на MariaDB в `docker-compose.yml`:
+Замените MySQL на MariaDB в `docker compose.yml`:
 ```yaml
 mysql:
   image: mariadb:10.5
@@ -156,10 +156,10 @@ sudo chown -R 999:999 /var/lib/docker/volumes/
 ```
 
 ### Ошибка: "Port already in use"
-**Решение:** Порт 3307 занят, измените порт в `docker-compose.yml`
+**Решение:** Порт 3307 занят, измените порт в `docker compose.yml`
 
 ### Ошибка: "Out of memory"
-**Решение:** Недостаточно памяти, используйте `docker-compose.fix-mysql.yml`
+**Решение:** Недостаточно памяти, используйте `docker compose.fix-mysql.yml`
 
 ### Ошибка: "MySQL server has gone away"
 **Решение:** Увеличьте таймауты в MySQL конфигурации
@@ -169,10 +169,10 @@ sudo chown -R 999:999 /var/lib/docker/volumes/
 Если проблема не решена, соберите информацию:
 ```bash
 # Логи
-docker-compose logs mysql > mysql_logs.txt
+docker compose logs mysql > mysql_logs.txt
 
 # Статус
-docker-compose ps > status.txt
+docker compose ps > status.txt
 
 # Информация о системе
 free -h > memory.txt

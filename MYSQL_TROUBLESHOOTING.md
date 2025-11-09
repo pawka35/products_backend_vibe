@@ -20,7 +20,7 @@ free -h
 
 Если памяти меньше 512MB, используйте облегченную конфигурацию:
 ```bash
-docker-compose -f docker-compose.fix-mysql.yml up -d mysql
+docker compose -f docker compose.fix-mysql.yml up -d mysql
 ```
 
 #### Решение 1.2: Проблемы с volumes
@@ -28,14 +28,14 @@ docker-compose -f docker-compose.fix-mysql.yml up -d mysql
 Очистите volumes и пересоздайте:
 ```bash
 # Остановите контейнер
-docker-compose stop mysql
-docker-compose rm -f mysql
+docker compose stop mysql
+docker compose rm -f mysql
 
 # Удалите volume (данные будут потеряны!)
 docker volume rm backend_mysql_data
 
 # Запустите заново
-docker-compose up -d mysql
+docker compose up -d mysql
 ```
 
 #### Решение 1.3: Конфликт портов
@@ -47,7 +47,7 @@ netstat -tuln | grep 3307
 ss -tuln | grep 3307
 ```
 
-Если порт занят, измените порт в `docker-compose.yml`:
+Если порт занят, измените порт в `docker compose.yml`:
 ```yaml
 ports:
   - "3308:3306"  # Измените 3307 на другой порт
@@ -72,7 +72,7 @@ sudo chown -R 999:999 /var/lib/docker/volumes/backend_mysql_data
 
 Используйте исправленную конфигурацию:
 ```bash
-docker-compose -f docker-compose.fix-mysql.yml up -d mysql
+docker compose -f docker compose.fix-mysql.yml up -d mysql
 ```
 
 Эта конфигурация:
@@ -88,7 +88,7 @@ docker-compose -f docker-compose.fix-mysql.yml up -d mysql
 
 **Решения:**
 
-Проверьте переменные окружения в `docker-compose.yml`:
+Проверьте переменные окружения в `docker compose.yml`:
 ```yaml
 environment:
   MYSQL_ROOT_PASSWORD: rootpassword
@@ -157,7 +157,7 @@ docker network inspect backend_app_network
 
 Дождитесь, пока MySQL станет healthy:
 ```bash
-docker-compose ps mysql
+docker compose ps mysql
 # Должно быть "healthy"
 ```
 
@@ -184,16 +184,16 @@ chmod +x diagnose_mysql.sh
 
 ```bash
 # 1. Остановите все контейнеры
-docker-compose down
+docker compose down
 
 # 2. Удалите volumes
 docker volume rm backend_mysql_data
 
 # 3. Используйте исправленную конфигурацию
-docker-compose -f docker-compose.fix-mysql.yml up -d mysql
+docker compose -f docker compose.fix-mysql.yml up -d mysql
 
 # 4. Проверьте логи
-docker-compose -f docker-compose.fix-mysql.yml logs -f mysql
+docker compose -f docker compose.fix-mysql.yml logs -f mysql
 ```
 
 ## Альтернатива: Использование внешнего MySQL
@@ -215,7 +215,7 @@ GRANT ALL PRIVILEGES ON fastapi_auth.* TO 'fastapi_user'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-3. Измените `docker-compose.yml`:
+3. Измените `docker compose.yml`:
 ```yaml
 fastapi:
   environment:
@@ -223,16 +223,16 @@ fastapi:
   # Уберите depends_on: mysql
 ```
 
-4. Удалите сервис MySQL из `docker-compose.yml`
+4. Удалите сервис MySQL из `docker compose.yml`
 
 ## Проверка после исправления
 
 ```bash
 # Проверьте статус
-docker-compose ps
+docker compose ps
 
 # Проверьте логи
-docker-compose logs mysql
+docker compose logs mysql
 
 # Проверьте подключение
 docker exec -it fastapi_mysql mysql -u fastapi_user -pfastapi_password -e "SHOW DATABASES;"
@@ -242,8 +242,8 @@ docker exec -it fastapi_mysql mysql -u fastapi_user -pfastapi_password -e "SHOW 
 
 Сохраните логи для анализа:
 ```bash
-docker-compose logs mysql > mysql_logs.txt
-docker-compose ps > containers_status.txt
+docker compose logs mysql > mysql_logs.txt
+docker compose ps > containers_status.txt
 docker info > docker_info.txt
 ```
 

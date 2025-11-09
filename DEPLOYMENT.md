@@ -12,8 +12,8 @@
 
 ```bash
 # Просто соберите и запустите
-docker-compose build
-docker-compose up -d
+docker compose build
+docker compose up -d
 ```
 
 ### Решение 2: Использовать максимально совместимый образ
@@ -23,10 +23,10 @@ docker-compose up -d
 ```bash
 # Сборка с альтернативным Dockerfile
 docker build -f Dockerfile.compatible -t fastapi_app .
-docker-compose up -d
+docker compose up -d
 ```
 
-Или обновите `docker-compose.yml`:
+Или обновите `docker compose.yml`:
 
 ```yaml
 fastapi:
@@ -43,7 +43,7 @@ fastapi:
 ```bash
 # Используйте Dockerfile.server-build
 docker build -f Dockerfile.server-build -t fastapi_app .
-docker-compose up -d
+docker compose up -d
 ```
 
 ### Решение 4: Установка без Docker (напрямую на сервере)
@@ -139,7 +139,7 @@ grep flags /proc/cpuinfo | head -1 | grep -o 'sse3\|ssse3\|sse4_1\|sse4_2\|popcn
 
 3. Проверьте логи Docker:
    ```bash
-   docker-compose logs fastapi
+   docker compose logs fastapi
    ```
 
 4. Попробуйте запустить Python напрямую:

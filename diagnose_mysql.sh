@@ -19,21 +19,21 @@ echo ""
 
 # 2. Проверка Docker Compose
 echo "2. Проверка Docker Compose..."
-if ! command -v docker-compose &> /dev/null; then
-    echo "❌ Docker Compose не установлен"
+if ! docker compose version &> /dev/null; then
+    echo "❌ Docker Compose не установлен или не доступен"
     exit 1
 fi
-echo "✅ Docker Compose установлен: $(docker-compose --version)"
+echo "✅ Docker Compose установлен: $(docker compose version)"
 echo ""
 
 # 3. Проверка статуса контейнеров
 echo "3. Статус контейнеров..."
-docker-compose ps
+docker compose ps
 echo ""
 
 # 4. Проверка логов MySQL
 echo "4. Последние логи MySQL контейнера..."
-docker-compose logs mysql --tail=50
+docker compose logs mysql --tail=50
 echo ""
 
 # 5. Проверка занятости порта 3307
@@ -73,9 +73,9 @@ read -p "Пересоздать MySQL контейнер? (y/n) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "Останавливаем контейнер..."
-    docker-compose stop mysql
+    docker compose stop mysql
     echo "Удаляем контейнер..."
-    docker-compose rm -f mysql
+    docker compose rm -f mysql
     echo "Удаляем volume (данные будут потеряны!)..."
     read -p "Удалить volume с данными MySQL? (y/n) " -n 1 -r
     echo
@@ -83,13 +83,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         docker volume rm backend_mysql_data 2>/dev/null || echo "Volume не найден или уже удален"
     fi
     echo "Запускаем заново..."
-    docker-compose up -d mysql
+    docker compose up -d mysql
     echo "Ждем 10 секунд..."
     sleep 10
     echo "Проверяем статус..."
-    docker-compose ps mysql
+    docker compose ps mysql
     echo "Логи:"
-    docker-compose logs mysql --tail=20
+    docker compose logs mysql --tail=20
 fi
 
 echo ""

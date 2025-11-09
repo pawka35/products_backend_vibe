@@ -31,8 +31,8 @@ print_warning() {
 
 # Шаг 1: Остановка и удаление текущего контейнера
 print_warning "Шаг 1: Остановка текущего MySQL контейнера..."
-docker-compose stop mysql 2>/dev/null || true
-docker-compose rm -f mysql 2>/dev/null || true
+docker compose stop mysql 2>/dev/null || true
+docker compose rm -f mysql 2>/dev/null || true
 print_success "Контейнер остановлен"
 
 # Шаг 2: Удаление volumes
@@ -81,7 +81,7 @@ esac
 
 # Шаг 4: Запуск MySQL
 print_warning "Шаг 3: Запуск MySQL с выбранной конфигурацией..."
-docker-compose -f $COMPOSE_FILE up -d mysql
+docker compose -f $COMPOSE_FILE up -d mysql
 
 # Шаг 5: Ожидание запуска
 print_warning "Ожидание запуска MySQL (это может занять до 60 секунд)..."
@@ -89,7 +89,7 @@ sleep 5
 
 # Проверка статуса
 for i in {1..12}; do
-    STATUS=$(docker-compose -f $COMPOSE_FILE ps mysql | grep -o "Up\|healthy\|unhealthy" | head -1)
+    STATUS=$(docker compose -f $COMPOSE_FILE ps mysql | grep -o "Up\|healthy\|unhealthy" | head -1)
     if [[ "$STATUS" == *"healthy"* ]] || [[ "$STATUS" == *"Up"* ]]; then
         print_success "MySQL запущен!"
         break
@@ -97,7 +97,7 @@ for i in {1..12}; do
     if [ $i -eq 12 ]; then
         print_error "MySQL не запустился за 60 секунд"
         echo "Проверьте логи:"
-        echo "  docker-compose -f $COMPOSE_FILE logs mysql"
+        echo "  docker compose -f $COMPOSE_FILE logs mysql"
         exit 1
     fi
     echo "Ожидание... ($i/12)"
@@ -118,7 +118,7 @@ fi
 # Шаг 7: Показать логи
 echo ""
 print_warning "Последние логи MySQL:"
-docker-compose -f $COMPOSE_FILE logs mysql --tail=20
+docker compose -f $COMPOSE_FILE logs mysql --tail=20
 
 echo ""
 echo "=========================================="
@@ -126,10 +126,10 @@ print_success "Исправление завершено!"
 echo "=========================================="
 echo ""
 echo "Проверьте статус:"
-echo "  docker-compose -f $COMPOSE_FILE ps mysql"
+echo "  docker compose -f $COMPOSE_FILE ps mysql"
 echo ""
 echo "Проверьте логи:"
-echo "  docker-compose -f $COMPOSE_FILE logs -f mysql"
+echo "  docker compose -f $COMPOSE_FILE logs -f mysql"
 echo ""
 echo "Подключитесь к MySQL:"
 echo "  docker exec -it fastapi_mysql mysql -u fastapi_user -pfastapi_password fastapi_auth"

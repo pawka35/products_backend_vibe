@@ -13,8 +13,8 @@ Fatal glibc error: CPU does not support x86-64-v2
 Обновленный `Dockerfile` уже использует Python 3.11. Просто пересоберите:
 
 ```bash
-docker-compose build --no-cache
-docker-compose up -d
+docker compose build --no-cache
+docker compose up -d
 ```
 
 ## Решение 2: Использовать совместимый Dockerfile
@@ -22,8 +22,8 @@ docker-compose up -d
 Если Python 3.11 не помог, используйте максимально совместимый образ:
 
 ```bash
-docker-compose -f docker-compose.compatible.yml build --no-cache
-docker-compose -f docker-compose.compatible.yml up -d
+docker compose -f docker compose.compatible.yml build --no-cache
+docker compose -f docker compose.compatible.yml up -d
 ```
 
 ## Решение 3: Установка без Docker (рекомендуется для старых серверов)
