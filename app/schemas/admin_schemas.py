@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, validator, Field
+from pydantic import BaseModel, EmailStr, field_validator, Field
 from typing import Optional
 from auth.models import UserRole
 from auth.schemas import UserResponse
@@ -30,7 +30,8 @@ class AdminUserCreate(BaseModel):
     password: str = Field(..., min_length=8, max_length=128, description="Пароль пользователя")
     role: UserRole = Field(UserRole.CUSTOMER, description="Роль пользователя (admin, customer, executor)")
     
-    @validator('password')
+    @field_validator('password')
+    @classmethod
     def validate_password(cls, v):
         is_valid, error_message = validate_password_strength(v)
         if not is_valid:

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from products.models import OrderStatus
 from datetime import datetime
@@ -18,14 +18,13 @@ class ProductUpdate(BaseModel):
     notes: Optional[str] = None
 
 class Product(ProductBase):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     is_purchased: bool
     purchased_at: Optional[datetime] = None
     purchased_by: Optional[int] = None
     order_id: int
-
-    class Config:
-        from_attributes = True
 
 class ProductPurchase(BaseModel):
     is_purchased: bool
@@ -46,6 +45,8 @@ class OrderComplete(BaseModel):
     complete_comment: Optional[str] = None
 
 class Order(OrderBase):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     customer_id: int
     executor_id: int
@@ -56,10 +57,9 @@ class Order(OrderBase):
     complete_comment: Optional[str] = None
     products: List[Product]
 
-    class Config:
-        from_attributes = True
-
 class OrderSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     customer_id: int
     executor_id: int
@@ -68,9 +68,6 @@ class OrderSummary(BaseModel):
     total_products: int
     purchased_products: int
     is_completable: bool
-
-    class Config:
-        from_attributes = True
 
 class OrderStatusUpdate(BaseModel):
     status: OrderStatus
@@ -91,6 +88,8 @@ class OrderFilters(BaseModel):
 
 class OrderWithDetails(BaseModel):
     """Расширенная схема заказа с деталями для администратора"""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     customer_id: int
     executor_id: int
@@ -105,9 +104,6 @@ class OrderWithDetails(BaseModel):
     total_products: int
     purchased_products: int
     is_completable: bool
-
-    class Config:
-        from_attributes = True
 
 class OrdersListResponse(BaseModel):
     """Схема ответа со списком заказов и пагинацией"""
@@ -154,6 +150,8 @@ class SavedProductUpdate(BaseModel):
 
 class SavedProduct(BaseModel):
     """Схема сохраненного товара"""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     user_id: int
     name: str
@@ -161,9 +159,6 @@ class SavedProduct(BaseModel):
     notes: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
 
 class SavedProductListResponse(BaseModel):
     """Схема ответа со списком сохраненных товаров"""

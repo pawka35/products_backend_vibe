@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, validator, Field
+from pydantic import BaseModel, EmailStr, field_validator, Field, ConfigDict
 from typing import Optional, List, Set
 from auth.models import UserRole
 from auth.validators import validate_password_strength
@@ -9,7 +9,8 @@ class UserBase(BaseModel):
     email: EmailStr
     role: UserRole = UserRole.CUSTOMER
     
-    @validator('role')
+    @field_validator('role')
+    @classmethod
     def validate_role(cls, v):
         if v == UserRole.ADMIN:
             raise ValueError("Нельзя создать пользователя с ролью администратора через регистрацию")
@@ -18,7 +19,8 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8, max_length=128, description="Пароль должен содержать минимум 8 символов")
     
-    @validator('password')
+    @field_validator('password')
+    @classmethod
     def validate_password(cls, v):
         is_valid, error_message = validate_password_strength(v)
         if not is_valid:
@@ -30,22 +32,24 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     role: Optional[UserRole] = None
     
-    @validator('role')
+    @field_validator('role')
+    @classmethod
     def validate_role_update(cls, v):
-        if v == UserRole.ADMIN:
+        if v is not None and v == UserRole.ADMIN:
             raise ValueError("Нельзя изменить роль на администратора через обычное обновление")
         return v
 
 class User(UserBase):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
-
 class UserResponse(BaseModel):
     """Схема для ответа API без валидации роли"""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     username: str
     email: EmailStr
@@ -54,9 +58,6 @@ class UserResponse(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
         
     @classmethod
     def from_user(cls, user):
@@ -89,6 +90,8 @@ class UserLogin(BaseModel):
 
 class UserList(BaseModel):
     """Схема для списка пользователей без валидации роли"""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     username: str
     email: EmailStr
@@ -97,9 +100,6 @@ class UserList(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
         
     @classmethod
     def from_user(cls, user):
@@ -124,7 +124,8 @@ class PasswordChange(BaseModel):
     current_password: str = Field(..., description="Текущий пароль")
     new_password: str = Field(..., min_length=8, max_length=128, description="Новый пароль")
     
-    @validator('new_password')
+    @field_validator('new_password')
+    @classmethod
     def validate_new_password(cls, v):
         is_valid, error_message = validate_password_strength(v)
         if not is_valid:
@@ -133,16 +134,17 @@ class PasswordChange(BaseModel):
 
 class UserProfileUpdate(BaseModel):
     """Схема для обновления профиля пользователя (без изменения роли)"""
-    username: Optional[str] = Field(None, min_length=3, max_length=50, description="Новое имя пользователя")
-    email: Optional[EmailStr] = Field(None, description="Новый email")
-    
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "username": "new_username",
                 "email": "newemail@example.com"
             }
         }
+    )
+    
+    username: Optional[str] = Field(None, min_length=3, max_length=50, description="Новое имя пользователя")
+    email: Optional[EmailStr] = Field(None, description="Новый email")
 
 class UserUpdateResponse(BaseModel):
     """Схема ответа после обновления данных пользователя"""

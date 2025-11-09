@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 
@@ -22,12 +22,11 @@ class RoleUpdate(BaseModel):
 
 class Role(RoleBase):
     """Схема роли с полной информацией"""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
-    class Config:
-        from_attributes = True
 
 class RoleAssignmentBase(BaseModel):
     """Базовая схема связи пользователя с ролью"""
@@ -48,12 +47,11 @@ class RoleAssignmentUpdate(BaseModel):
 
 class RoleAssignment(RoleAssignmentBase):
     """Схема связи пользователя с ролью с полной информацией"""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     assigned_by: Optional[int] = None
     assigned_at: datetime
-    
-    class Config:
-        from_attributes = True
 
 class RoleAssignmentDetail(RoleAssignment):
     """Детальная схема связи пользователя с ролью"""
@@ -66,12 +64,11 @@ class RoleWithUsers(Role):
 
 class UserWithRoles(BaseModel):
     """Пользователь с ролями"""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     username: str
     email: str
     role: str
     is_active: bool
     role_assignments: List[RoleAssignmentDetail] = []
-    
-    class Config:
-        from_attributes = True

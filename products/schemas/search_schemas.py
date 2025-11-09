@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List, Union
 from datetime import datetime
 
@@ -9,6 +9,8 @@ class ProductSearchRequest(BaseModel):
 
 class ExternalProduct(BaseModel):
     """Внешний товар из Maxi Retail"""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: Optional[Union[str, int]] = None
     name: str
     price: Optional[float] = None
@@ -18,11 +20,10 @@ class ExternalProduct(BaseModel):
     search_query: str
     source: str = "maxi-retail.ru"
 
-    class Config:
-        from_attributes = True
-
 class ProductSearchResponse(BaseModel):
     """Ответ на поиск товаров"""
+    model_config = ConfigDict(from_attributes=True)
+    
     query: str
     total_found: int
     total_pages: int
@@ -32,9 +33,6 @@ class ProductSearchResponse(BaseModel):
     products: List[ExternalProduct]
     search_timestamp: datetime
     source: str = "maxi-retail.ru"
-
-    class Config:
-        from_attributes = True
 
 class PaginationInfo(BaseModel):
     """Информация о пагинации"""
