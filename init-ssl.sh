@@ -138,7 +138,12 @@ echo ""
 echo "Запускаем certbot..."
 echo ""
 
+# Создаем лог-файл заранее
+touch /tmp/certbot-output.log
+echo "Начало получения сертификата: $(date)" >> /tmp/certbot-output.log
+
 # Запускаем certbot с выводом в реальном времени
+echo "Запускаем certbot..." >> /tmp/certbot-output.log
 docker compose run --rm certbot certonly \
     --webroot \
     --webroot-path=/var/www/certbot \
@@ -147,8 +152,10 @@ docker compose run --rm certbot certonly \
     --no-eff-email \
     --non-interactive \
     --verbose \
-    -d $DOMAIN 2>&1 | tee /tmp/certbot-output.log &
+    -d $DOMAIN 2>&1 | tee -a /tmp/certbot-output.log &
 CERTBOT_PID=$!
+
+echo "Certbot запущен (PID: $CERTBOT_PID)" >> /tmp/certbot-output.log
 
 # Ждем максимум 10 минут (600 секунд)
 TIMEOUT=600
