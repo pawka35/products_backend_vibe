@@ -27,9 +27,16 @@ echo "2. Проверка порта 80 на сервере..."
 if netstat -tuln 2>/dev/null | grep -q ":80 "; then
     echo "   ✅ Порт 80 слушается на сервере"
     netstat -tuln | grep ":80 "
+elif ss -tuln 2>/dev/null | grep -q ":80 "; then
+    echo "   ✅ Порт 80 слушается на сервере (через ss)"
+    ss -tuln | grep ":80 "
+elif docker compose ps nginx | grep -q "Up"; then
+    echo "   ⚠️  netstat не показывает порт 80 (это нормально для Docker)"
+    echo "   Docker пробрасывает порты через iptables, а не напрямую"
+    echo "   ✅ Nginx контейнер запущен - порт должен быть доступен"
 else
-    echo "   ❌ Порт 80 НЕ слушается на сервере!"
-    echo "   Проверьте, что nginx запущен: docker compose ps nginx"
+    echo "   ❌ Порт 80 НЕ слушается и nginx не запущен!"
+    echo "   Запустите: docker compose up -d nginx"
 fi
 
 echo ""
