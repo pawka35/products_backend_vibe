@@ -17,13 +17,25 @@ if ! grep -q "nginx.conf.template\|# Временный прокси" nginx/ngin
     echo "⚠️  Внимание: Похоже, что используется конфигурация с HTTPS блоком"
     echo "Для получения сертификата нужна временная конфигурация без HTTPS"
     echo ""
-    read -p "Продолжить? (y/n) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "Отменено. Используйте nginx.conf.template для первого запуска"
-        exit 1
-    fi
+    echo "Переключаемся на временную конфигурацию..."
+    cp nginx/nginx.conf.template nginx/nginx.conf
+    echo "✅ Временная конфигурация применена"
+    echo "Пересобираем и перезапускаем nginx..."
+    docker compose build nginx
+    docker compose up -d nginx
+    echo "⏳ Ждем запуска nginx..."
+    sleep 5
+    echo "✅ Nginx перезапущен"
 fi
+
+# Проверяем, что конфигурация nginx в контейнере правильная
+echo "🔍 Проверяем конфигурацию nginx в контейнере..."
+if ! docker compose exec nginx grep -q "acme-challenge" /etc/nginx/nginx.conf 2>/dev/null; then
+    echo "❌ Location /.well-known/acme-challenge/ не найден в конфигурации nginx!"
+    echo "Пересоберите nginx: docker compose build nginx && docker compose up -d nginx"
+    exit 1
+fi
+echo "   ✅ Location /.well-known/acme-challenge/ найден в конфигурации"
 
 # Проверяем, что контейнеры запущены
 if ! docker compose ps | grep -q "fastapi_nginx.*Up"; then
@@ -77,14 +89,35 @@ TEST_FILE="test-$(date +%s).txt"
 docker compose exec nginx mkdir -p $TEST_DIR 2>/dev/null || true
 echo "test-content" | docker compose exec -T nginx tee $TEST_DIR/$TEST_FILE > /dev/null 2>&1
 if [ $? -eq 0 ]; then
-    READ_CONTENT=$(curl -s http://$DOMAIN/.well-known/acme-challenge/$TEST_FILE 2>/dev/null)
-    if [ "$READ_CONTENT" = "test-content" ]; then
-        echo "   ✅ ACME challenge endpoint работает - файл успешно записан и прочитан"
+    # Проверяем, что файл действительно создан
+    if docker compose exec nginx test -f $TEST_DIR/$TEST_FILE; then
+        echo "   ✅ Файл создан: $TEST_DIR/$TEST_FILE"
+        # Проверяем содержимое файла
+        FILE_CONTENT=$(docker compose exec nginx cat $TEST_DIR/$TEST_FILE 2>/dev/null)
+        echo "   Содержимое файла в контейнере: '$FILE_CONTENT'"
+        
+        # Пробуем прочитать через HTTP
+        READ_CONTENT=$(curl -s http://$DOMAIN/.well-known/acme-challenge/$TEST_FILE 2>/dev/null)
+        if [ "$READ_CONTENT" = "test-content" ]; then
+            echo "   ✅ ACME challenge endpoint работает - файл успешно прочитан через HTTP"
+        else
+            echo "   ⚠️  ACME challenge endpoint: файл записан, но не читается через HTTP"
+            echo "   Получено через HTTP: '$READ_CONTENT'"
+            echo "   Ожидалось: 'test-content'"
+            echo ""
+            echo "   Проверяем конфигурацию nginx в контейнере:"
+            docker compose exec nginx grep -A 3 "acme-challenge" /etc/nginx/nginx.conf
+            echo ""
+            echo "   Проверяем логи nginx:"
+            docker compose exec nginx tail -3 /var/log/nginx/error.log 2>/dev/null || echo "   Логи недоступны"
+            echo ""
+            echo "   Попробуйте:"
+            echo "   1. Пересобрать nginx: docker compose build nginx"
+            echo "   2. Перезапустить nginx: docker compose restart nginx"
+            echo "   3. Проверить конфигурацию: docker compose exec nginx nginx -t"
+        fi
     else
-        echo "   ⚠️  ACME challenge endpoint: файл записан, но не читается через HTTP"
-        echo "   Получено: '$READ_CONTENT' (ожидалось: 'test-content')"
-        echo "   Проверьте конфигурацию nginx - должен быть: alias /var/www/certbot/;"
-        echo "   Перезапустите nginx: docker compose restart nginx"
+        echo "   ❌ Файл не найден после создания: $TEST_DIR/$TEST_FILE"
     fi
     docker compose exec nginx rm -f $TEST_DIR/$TEST_FILE
 else
