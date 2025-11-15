@@ -13,14 +13,19 @@ VOLUME_NAME=$(docker volume ls | grep certbot_data | awk '{print $2}')
 if [ ! -z "$VOLUME_NAME" ]; then
     echo "   ✅ Volume найден: $VOLUME_NAME"
     
-    # Проверяем файлы через временный контейнер alpine (быстро и надежно)
+    # Проверяем структуру volume
     echo ""
-    echo "2. Проверка файлов сертификатов в volume..."
+    echo "2. Проверка содержимого volume..."
+    echo "   Структура директорий в volume:"
+    docker run --rm -v ${VOLUME_NAME}:/data alpine find /data -type d -maxdepth 3 2>/dev/null | head -20 || echo "   Volume пуст или недоступен"
+    
+    echo ""
+    echo "3. Проверка файлов сертификатов..."
     CERT_DIR="/data/live/products.bunkov.in"
     
     # Используем alpine контейнер для проверки (не зависает)
     if docker run --rm -v ${VOLUME_NAME}:/data alpine test -d $CERT_DIR 2>/dev/null; then
-        echo "   ✅ Директория сертификатов существует"
+        echo "   ✅ Директория сертификатов существует: $CERT_DIR"
         echo ""
         echo "   Список файлов:"
         docker run --rm -v ${VOLUME_NAME}:/data alpine ls -la $CERT_DIR 2>/dev/null | head -10
@@ -39,7 +44,17 @@ if [ ! -z "$VOLUME_NAME" ]; then
         echo "   ✅ Сертификат получен! Можно применять HTTPS конфигурацию."
     else
         echo "   ❌ Директория сертификатов не найдена: $CERT_DIR"
-        echo "   Сертификат еще не получен"
+        echo ""
+        echo "   Проверяем, есть ли другие домены в volume:"
+        if docker run --rm -v ${VOLUME_NAME}:/data alpine test -d /data/live 2>/dev/null; then
+            echo "   Найденные домены:"
+            docker run --rm -v ${VOLUME_NAME}:/data alpine ls -la /data/live 2>/dev/null || echo "   Директория live пуста"
+        else
+            echo "   Директория /data/live не существует"
+        fi
+        echo ""
+        echo "   ⚠️  Сертификат еще не получен"
+        echo "   Запустите: ./init-ssl.sh"
     fi
 else
     echo "   ❌ Volume certbot_data не найден"
