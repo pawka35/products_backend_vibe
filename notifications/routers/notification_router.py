@@ -100,7 +100,7 @@ async def disconnect_telegram(
 
 
 @router.get("/settings", response_model=NotificationSettingsResponse)
-async def get_notification_settings(
+async def get_notification_settings_endpoint(
     current_user: UserModel = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -149,32 +149,47 @@ async def telegram_webhook(
     - /verify <код> - верификация и привязка Telegram ID
     - /start - приветствие
     """
+    import logging
+    logger = logging.getLogger("notifications")
+    
     from notifications.crud import get_user_by_telegram_id
+    
+    # Логируем входящий запрос для отладки
+    logger.info(f"Получен webhook от Telegram: {update}")
     
     # Проверяем, что это сообщение
     if "message" not in update:
+        logger.debug("Webhook не содержит message, пропускаем")
         return {"ok": True}
     
     message = update["message"]
     chat_id = message.get("chat", {}).get("id")
     text = message.get("text", "")
     
+    logger.info(f"Обработка сообщения: chat_id={chat_id}, text={text}")
+    
     if not chat_id or not text:
+        logger.warning(f"Неполное сообщение: chat_id={chat_id}, text={text}")
         return {"ok": True}
     
     # Обрабатываем команду /verify
     if text.startswith("/verify"):
+        logger.info(f"Обработка команды /verify для chat_id={chat_id}")
         parts = text.split()
         if len(parts) != 2:
             # Неправильный формат команды
+            logger.warning(f"Неправильный формат команды /verify: {text}")
             telegram_service = TelegramService()
-            telegram_service.send_message(
+            success = telegram_service.send_message(
                 chat_id,
                 "❌ Неправильный формат команды.\n\nИспользование: /verify <код>\n\nПример: /verify 123456"
             )
+            if not success:
+                logger.error(f"❌ Не удалось отправить сообщение об ошибке в chat_id={chat_id}")
             return {"ok": True}
         
         code = parts[1]
+        logger.info(f"Проверка кода верификации: {code} для chat_id={chat_id}")
         
         try:
             # Проверяем код
@@ -182,29 +197,49 @@ async def telegram_webhook(
             
             if user:
                 # Успешная верификация
+                logger.info(f"✅ Код верифицирован успешно для user_id={user.id}, chat_id={chat_id}")
                 telegram_service = TelegramService()
-                telegram_service.send_message(
+                success = telegram_service.send_message(
                     chat_id,
                     f"✅ <b>Telegram успешно привязан!</b>\n\n"
                     f"Ваш аккаунт: {user.username}\n"
                     f"Email: {user.email}\n\n"
                     f"Теперь вы будете получать уведомления о завершении заказов."
                 )
+                if success:
+                    logger.info(f"✅ Сообщение успешно отправлено в chat_id={chat_id}")
+                else:
+                    logger.error(f"❌ Не удалось отправить сообщение в chat_id={chat_id}. Возможно, пользователь не начал диалог с ботом.")
             else:
                 # Неверный или истекший код
+                logger.warning(f"❌ Неверный или истекший код: {code} для chat_id={chat_id}")
                 telegram_service = TelegramService()
-                telegram_service.send_message(
+                success = telegram_service.send_message(
                     chat_id,
                     "❌ Неверный или истекший код верификации.\n\n"
                     "Запросите новый код в веб-интерфейсе."
                 )
+                if not success:
+                    logger.error(f"❌ Не удалось отправить сообщение об ошибке в chat_id={chat_id}")
         except ValueError as e:
             # Ошибка при верификации (например, Telegram ID уже привязан)
+            logger.error(f"❌ Ошибка верификации: {e} для chat_id={chat_id}")
             telegram_service = TelegramService()
-            telegram_service.send_message(
+            success = telegram_service.send_message(
                 chat_id,
                 f"❌ Ошибка: {str(e)}"
             )
+            if not success:
+                logger.error(f"❌ Не удалось отправить сообщение об ошибке в chat_id={chat_id}")
+        except Exception as e:
+            logger.error(f"❌ Неожиданная ошибка при верификации: {e}", exc_info=True)
+            telegram_service = TelegramService()
+            success = telegram_service.send_message(
+                chat_id,
+                "❌ Произошла ошибка при обработке команды. Попробуйте позже."
+            )
+            if not success:
+                logger.error(f"❌ Не удалось отправить сообщение об ошибке в chat_id={chat_id}")
     
     # Обрабатываем команду /start
     elif text == "/start":

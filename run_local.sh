@@ -61,15 +61,21 @@ else:
 EOF
 echo ""
 
-# Выполняем миграции (если нужно)
-echo "5. Проверяем миграции..."
-if [ -f "migrations/add_telegram_notifications.py" ]; then
-    read -p "   Выполнить миграцию add_telegram_notifications? (y/n) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        python3 migrations/add_telegram_notifications.py
-    fi
-fi
+# Проверяем и применяем миграции
+echo "5. Проверяем и применяем миграции..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+python3 << EOF
+import sys
+import os
+sys.path.insert(0, "$SCRIPT_DIR")
+
+try:
+    from migrations.apply_migrations import apply_migrations
+    apply_migrations()
+except Exception as e:
+    print(f"   ⚠️  Ошибка при проверке миграций: {e}")
+    print("   Продолжаем запуск приложения...")
+EOF
 echo ""
 
 # Запускаем приложение

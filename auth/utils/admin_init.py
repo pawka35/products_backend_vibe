@@ -6,6 +6,11 @@ from auth.utils.auth_utils import get_password_hash
 from database import get_db
 from auth.models.role_models import Role
 
+# Импортируем все модели, чтобы SQLAlchemy мог разрешить строковые ссылки в relationships
+# Это нужно для правильной работы relationship("Order", ...) в модели User
+import products.models  # noqa: F401
+import notifications.models  # noqa: F401
+
 def generate_secure_password(length: int = 16) -> str:
     """
     Генерирует безопасный пароль.

@@ -65,8 +65,10 @@ class TelegramService:
                 if result.get("ok"):
                     return result.get("result")
                 else:
+                    error_code = result.get("error_code", "unknown")
                     error_description = result.get("description", "Unknown error")
-                    logger.error(f"Telegram API error: {error_description}")
+                    logger.error(f"Telegram API error (code {error_code}): {error_description}")
+                    logger.debug(f"Полный ответ API: {result}")
                     return None
                     
         except httpx.TimeoutException:
@@ -150,10 +152,12 @@ class TelegramService:
         result = self._retry_request("sendMessage", params)
         
         if result:
-            logger.info(f"Сообщение успешно отправлено пользователю {telegram_id}")
+            message_id = result.get("message_id", "unknown")
+            logger.info(f"Сообщение успешно отправлено пользователю {telegram_id} (message_id: {message_id})")
             return True
         else:
             logger.error(f"Не удалось отправить сообщение пользователю {telegram_id}")
+            logger.error(f"Параметры запроса: chat_id={telegram_id}, message_length={len(message)}")
             return False
     
     def format_order_completed_message(self, order) -> str:

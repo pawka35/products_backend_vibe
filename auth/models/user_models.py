@@ -24,7 +24,8 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Связи
-    orders = relationship("Order", foreign_keys="Order.customer_id", back_populates="customer")
+    # Указываем foreign_keys явно, т.к. в Order есть два FK на User (customer_id и executor_id)
+    orders = relationship("Order", foreign_keys="[Order.customer_id]", back_populates="customer")
     search_history = relationship("SearchHistory", back_populates="user")
     
     # Связь с множественными ролями
