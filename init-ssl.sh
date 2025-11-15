@@ -170,7 +170,7 @@ done
 wait $CERTBOT_PID
 CERTBOT_EXIT=$?
 
-if [ $? -eq 0 ]; then
+if [ $CERTBOT_EXIT -eq 0 ]; then
     echo "✅ SSL сертификат успешно получен!"
     
     # Запускаем сервис certbot для автоматического обновления
