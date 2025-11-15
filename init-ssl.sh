@@ -129,6 +129,16 @@ fi
 echo "🔐 Получаем SSL сертификат от Let's Encrypt..."
 echo "Это может занять несколько минут..."
 echo "Certbot будет проверять доступность домена через ACME challenge..."
+echo ""
+echo "💡 Если процесс зависает дольше 5 минут, откройте второй терминал и проверьте:"
+echo "   docker compose logs -f certbot"
+echo "   или"
+echo "   tail -f /tmp/certbot-output.log"
+echo ""
+echo "Запускаем certbot..."
+echo ""
+
+# Запускаем certbot с выводом в реальном времени
 docker compose run --rm certbot certonly \
     --webroot \
     --webroot-path=/var/www/certbot \
@@ -137,7 +147,28 @@ docker compose run --rm certbot certonly \
     --no-eff-email \
     --non-interactive \
     --verbose \
-    -d $DOMAIN 2>&1 | tee /tmp/certbot-output.log
+    -d $DOMAIN 2>&1 | tee /tmp/certbot-output.log &
+CERTBOT_PID=$!
+
+# Ждем максимум 10 минут (600 секунд)
+TIMEOUT=600
+ELAPSED=0
+while kill -0 $CERTBOT_PID 2>/dev/null && [ $ELAPSED -lt $TIMEOUT ]; do
+    sleep 5
+    ELAPSED=$((ELAPSED + 5))
+    if [ $((ELAPSED % 30)) -eq 0 ]; then
+        echo "   ⏳ Прошло ${ELAPSED} секунд... (максимум $TIMEOUT секунд)"
+        # Показываем последние строки лога
+        if [ -f /tmp/certbot-output.log ]; then
+            echo "   Последние строки лога:"
+            tail -3 /tmp/certbot-output.log | sed 's/^/   /'
+        fi
+    fi
+done
+
+# Проверяем результат
+wait $CERTBOT_PID
+CERTBOT_EXIT=$?
 
 if [ $? -eq 0 ]; then
     echo "✅ SSL сертификат успешно получен!"
@@ -168,16 +199,40 @@ if [ $? -eq 0 ]; then
     echo ""
     echo "=========================================="
 else
-    echo "❌ Ошибка при получении сертификата"
+    if [ $ELAPSED -ge $TIMEOUT ]; then
+        echo "❌ Таймаут при получении сертификата (превышено $TIMEOUT секунд)"
+        echo "   Процесс был прерван"
+        kill $CERTBOT_PID 2>/dev/null || true
+    else
+        echo "❌ Ошибка при получении сертификата"
+    fi
+    
     echo ""
     echo "Последние строки вывода certbot:"
-    tail -20 /tmp/certbot-output.log 2>/dev/null || echo "Лог недоступен"
+    if [ -f /tmp/certbot-output.log ]; then
+        tail -30 /tmp/certbot-output.log | sed 's/^/   /'
+    else
+        echo "   Лог недоступен"
+    fi
     echo ""
     echo "Проверьте:"
-    echo "  1. Логи certbot: docker compose logs certbot"
-    echo "  2. Логи nginx: docker compose logs nginx"
-    echo "  3. Доступность домена: curl -I http://$DOMAIN"
-    echo "  4. ACME challenge: curl http://$DOMAIN/.well-known/acme-challenge/test"
+    echo "  1. Логи certbot: docker compose logs certbot | tail -50"
+    echo "  2. Логи nginx: docker compose logs nginx | tail -50"
+    echo "  3. Доступность домена извне:"
+    echo "     curl http://products.bunkov.in/.well-known/acme-challenge/test"
+    echo "  4. DNS запись: nslookup products.bunkov.in"
+    echo "  5. Запустите тест: ./test-acme-quick.sh"
+    echo ""
+    echo "💡 Попробуйте получить сертификат вручную:"
+    echo "   docker compose run --rm certbot certonly \\"
+    echo "     --webroot \\"
+    echo "     --webroot-path=/var/www/certbot \\"
+    echo "     --email $EMAIL \\"
+    echo "     --agree-tos \\"
+    echo "     --no-eff-email \\"
+    echo "     --non-interactive \\"
+    echo "     --verbose \\"
+    echo "     -d $DOMAIN"
     echo ""
     echo "Подробная инструкция по устранению проблем: см. TROUBLESHOOT_SSL.md"
     # Запускаем certbot обратно, даже если была ошибка
