@@ -142,8 +142,18 @@ echo ""
 touch /tmp/certbot-output.log
 echo "Начало получения сертификата: $(date)" >> /tmp/certbot-output.log
 
+# Сначала проверяем, что certbot вообще может запуститься
+echo "Проверка возможности запуска certbot..." >> /tmp/certbot-output.log
+if ! timeout 15 docker compose run --rm certbot --version >> /tmp/certbot-output.log 2>&1; then
+    echo "❌ Certbot не может запуститься!" >> /tmp/certbot-output.log
+    echo "❌ Certbot не может запуститься!"
+    echo "Проверьте логи: tail -20 /tmp/certbot-output.log"
+    echo "Запустите диагностику: ./debug-certbot-hang.sh"
+    exit 1
+fi
+
 # Запускаем certbot с выводом в реальном времени
-echo "Запускаем certbot..." >> /tmp/certbot-output.log
+echo "Запускаем certbot для получения сертификата..." >> /tmp/certbot-output.log
 docker compose run --rm certbot certonly \
     --webroot \
     --webroot-path=/var/www/certbot \
@@ -156,6 +166,7 @@ docker compose run --rm certbot certonly \
 CERTBOT_PID=$!
 
 echo "Certbot запущен (PID: $CERTBOT_PID)" >> /tmp/certbot-output.log
+echo "Certbot запущен (PID: $CERTBOT_PID)"
 
 # Ждем максимум 10 минут (600 секунд)
 TIMEOUT=600
