@@ -9,8 +9,8 @@ COPY nginx.conf /etc/nginx/nginx.conf
 # Создаем директорию для статических файлов
 RUN mkdir -p /app/static
 
-# Открываем порт 80
-EXPOSE 80
+# Открываем порты 80 (HTTP) и 443 (HTTPS)
+EXPOSE 80 443
 
 # Проверяем конфигурацию nginx при запуске
 CMD ["nginx", "-g", "daemon off;"]

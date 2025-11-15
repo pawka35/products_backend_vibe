@@ -44,7 +44,8 @@ http {
         keepalive 32;
     }
 
-    # HTTP сервер - редирект на HTTPS
+    # HTTP сервер - для получения сертификата (до получения сертификата)
+    # После получения сертификата будет использоваться nginx.conf с редиректом
     server {
         listen 80;
         server_name products.bunkov.in;
@@ -54,41 +55,8 @@ http {
             root /var/www/certbot;
         }
 
-        # Редирект всех остальных запросов на HTTPS
-        location / {
-            return 301 https://$server_name$request_uri;
-        }
-    }
-
-    # HTTPS сервер
-    server {
-        listen 443 ssl http2;
-        server_name products.bunkov.in;
-
-        # SSL сертификаты (Let's Encrypt)
-        ssl_certificate /etc/letsencrypt/live/products.bunkov.in/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/products.bunkov.in/privkey.pem;
-
-        # SSL настройки безопасности
-        ssl_protocols TLSv1.2 TLSv1.3;
-        ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
-        ssl_prefer_server_ciphers off;
-        ssl_session_cache shared:SSL:10m;
-        ssl_session_timeout 10m;
-        ssl_session_tickets off;
-
-        # OCSP stapling
-        ssl_stapling on;
-        ssl_stapling_verify on;
-        ssl_trusted_certificate /etc/letsencrypt/live/products.bunkov.in/chain.pem;
-
-        # Security headers
-        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-        add_header X-Frame-Options "SAMEORIGIN" always;
-        add_header X-Content-Type-Options "nosniff" always;
-        add_header X-XSS-Protection "1; mode=block" always;
-
-        # Корневой путь
+        # Временный прокси до получения сертификата
+        # После получения сертификата замените на редирект в nginx.conf
         location / {
             proxy_pass http://fastapi_app;
             proxy_set_header Host $host;
@@ -138,3 +106,4 @@ http {
         }
     }
 }
+
