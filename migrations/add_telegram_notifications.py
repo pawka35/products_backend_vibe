@@ -37,10 +37,10 @@ def add_telegram_notifications():
             if result == 0:
                 print("   Добавляем колонку 'telegram_id' в таблицу 'users'...")
                 db.execute(text(
-                    "ALTER TABLE users ADD COLUMN telegram_id INT NULL UNIQUE, "
+                    "ALTER TABLE users ADD COLUMN telegram_id BIGINT NULL UNIQUE, "
                     "ADD INDEX idx_users_telegram_id (telegram_id)"
                 ))
-                print("   ✅ Колонка 'telegram_id' успешно добавлена.")
+                print("   ✅ Колонка 'telegram_id' успешно добавлена (тип BIGINT).")
             else:
                 print("   ✅ Колонка 'telegram_id' уже существует в таблице 'users'.")
             
@@ -83,7 +83,7 @@ def add_telegram_notifications():
                         id INT AUTO_INCREMENT PRIMARY KEY,
                         user_id INT NOT NULL,
                         code VARCHAR(6) NOT NULL,
-                        telegram_id INT NULL,
+                        telegram_id BIGINT NULL,
                         expires_at DATETIME(6) NOT NULL,
                         used BOOLEAN DEFAULT FALSE,
                         created_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),

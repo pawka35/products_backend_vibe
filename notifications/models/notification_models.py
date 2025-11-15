@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Text
+from sqlalchemy import Column, Integer, BigInteger, String, DateTime, Boolean, ForeignKey, Text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from database import Base
@@ -29,7 +29,7 @@ class TelegramVerificationCode(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     code = Column(String(6), nullable=False, index=True)  # 6-значный код
-    telegram_id = Column(Integer, nullable=True)  # Telegram ID пользователя (заполняется при верификации)
+    telegram_id = Column(BigInteger, nullable=True)  # Telegram ID пользователя (заполняется при верификации)
     expires_at = Column(DateTime(timezone=True), nullable=False)
     used = Column(Boolean, default=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

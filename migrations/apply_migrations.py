@@ -96,6 +96,37 @@ def apply_migrations():
         else:
             print("   ✅ Миграция add_telegram_notifications уже применена")
         
+        # Миграция 3: fix_telegram_id_bigint
+        print("\nПроверка миграции: fix_telegram_id_bigint...")
+        check_telegram_id_type = """
+            SELECT DATA_TYPE 
+            FROM information_schema.columns 
+            WHERE table_schema = DATABASE() 
+            AND table_name = 'users' 
+            AND column_name = 'telegram_id'
+        """
+        
+        try:
+            telegram_id_type = db.execute(text(check_telegram_id_type)).scalar()
+            if telegram_id_type and telegram_id_type.upper() == 'INT':
+                print("   Применяем миграцию fix_telegram_id_bigint...")
+                # Закрываем текущую сессию перед применением миграции
+                db.close()
+                from migrations.fix_telegram_id_bigint import fix_telegram_id_bigint
+                fix_telegram_id_bigint()
+                migrations_applied.append("fix_telegram_id_bigint")
+                # Создаем новую сессию для следующих проверок
+                db = SessionLocal()
+                print("   ✅ Миграция fix_telegram_id_bigint применена")
+            elif telegram_id_type and telegram_id_type.upper() == 'BIGINT':
+                print("   ✅ Миграция fix_telegram_id_bigint уже применена (тип BIGINT)")
+            elif telegram_id_type is None:
+                print("   ⚠️  Колонка telegram_id не найдена, пропускаем миграцию fix_telegram_id_bigint")
+            else:
+                print(f"   ⚠️  Неожиданный тип колонки telegram_id: {telegram_id_type}")
+        except Exception as e:
+            print(f"   ⚠️  Ошибка при проверке типа колонки telegram_id: {e}")
+        
         if migrations_applied:
             print(f"\n✅ Применено миграций: {len(migrations_applied)}")
             for migration in migrations_applied:
