@@ -32,6 +32,10 @@ if ! docker compose ps | grep -q "fastapi_nginx.*Up"; then
     exit 1
 fi
 
+# Останавливаем сервис certbot, если он запущен (чтобы не мешал получению первого сертификата)
+echo "🛑 Останавливаем сервис certbot (если запущен)..."
+docker compose stop certbot 2>/dev/null || true
+
 # Создаем директорию для ACME challenge, если её нет
 echo "📁 Создаем директорию для ACME challenge..."
 docker compose exec nginx mkdir -p /var/www/certbot
@@ -49,6 +53,11 @@ docker compose run --rm certbot certonly \
 
 if [ $? -eq 0 ]; then
     echo "✅ SSL сертификат успешно получен!"
+    
+    # Запускаем сервис certbot для автоматического обновления
+    echo "🔄 Запускаем сервис certbot для автоматического обновления сертификатов..."
+    docker compose up -d certbot
+    
     echo ""
     echo "=========================================="
     echo "⚠️  ВАЖНО: Теперь нужно применить полную конфигурацию HTTPS"
@@ -73,6 +82,8 @@ if [ $? -eq 0 ]; then
 else
     echo "❌ Ошибка при получении сертификата"
     echo "Проверьте логи: docker compose logs certbot"
+    # Запускаем certbot обратно, даже если была ошибка
+    docker compose up -d certbot 2>/dev/null || true
     exit 1
 fi
 
