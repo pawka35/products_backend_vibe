@@ -1,5 +1,4 @@
 from .notification_schemas import (
-    TelegramConnect,
     TelegramStatus,
     NotificationSettingsResponse,
     NotificationSettingsUpdate,
@@ -8,7 +7,6 @@ from .notification_schemas import (
 )
 
 __all__ = [
-    "TelegramConnect",
     "TelegramStatus",
     "NotificationSettingsResponse",
     "NotificationSettingsUpdate",
