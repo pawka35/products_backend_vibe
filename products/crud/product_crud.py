@@ -319,6 +319,30 @@ def update_order_status(db: Session, order_id: int, status: OrderStatus, complet
     
     db.commit()
     db.refresh(db_order)
+    
+    # Отправляем уведомление о завершении заказа через Telegram
+    if status == OrderStatus.COMPLETED:
+        try:
+            from notifications.services import TelegramService
+            from config import settings
+            
+            if settings.TELEGRAM_ENABLED:
+                # Загружаем связанные объекты для уведомления
+                from sqlalchemy.orm import joinedload
+                db_order = db.query(Order).options(
+                    joinedload(Order.customer),
+                    joinedload(Order.executor)
+                ).filter(Order.id == order_id).first()
+                
+                if db_order:
+                    telegram_service = TelegramService()
+                    telegram_service.send_order_completed_notification(db_order, db)
+        except Exception as e:
+            # Логируем ошибку, но не прерываем выполнение
+            import logging
+            logger = logging.getLogger("notifications")
+            logger.error(f"Ошибка при отправке уведомления о завершении заказа {order_id}: {e}")
+    
     return db_order
 
 def update_order(db: Session, order_id: int, order_edit: OrderEdit):

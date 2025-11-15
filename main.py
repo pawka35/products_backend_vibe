@@ -6,6 +6,9 @@ from auth.routers import auth_router
 from auth.routers.role_router import router as role_router # Добавляю обратно
 from app.admin import admin_router
 from products.routers import customer_router, executor_router
+from notifications.routers import notification_router
+# Импортируем модели для регистрации в Base.metadata
+from notifications.models import NotificationSettings, TelegramVerificationCode
 from auth.utils.admin_init import ensure_admin_exists, ensure_basic_roles
 from auth.utils.init_roles import ensure_basic_roles as ensure_role_models
 from database import SessionLocal
@@ -109,6 +112,7 @@ app.include_router(admin_router)
 app.include_router(customer_router)
 app.include_router(executor_router)
 app.include_router(role_router)
+app.include_router(notification_router)
 
 @app.get("/")
 async def root():

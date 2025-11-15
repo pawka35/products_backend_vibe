@@ -40,5 +40,13 @@ class Settings:
     # Настройки логирования
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     LOG_FORMAT: str = os.getenv("LOG_FORMAT", "json")
+    
+    # Telegram Bot настройки
+    TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    TELEGRAM_ENABLED: bool = os.getenv("TELEGRAM_ENABLED", "true").lower() == "true"
+    TELEGRAM_API_URL: str = os.getenv("TELEGRAM_API_URL", "https://api.telegram.org/bot")
+    TELEGRAM_MAX_RETRIES: int = int(os.getenv("TELEGRAM_MAX_RETRIES", "3"))
+    TELEGRAM_RETRY_DELAY: int = int(os.getenv("TELEGRAM_RETRY_DELAY", "1"))  # секунды
+    TELEGRAM_WEBHOOK_SECRET: str = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")  # Секретный ключ для webhook (опционально)
 
 settings = Settings()

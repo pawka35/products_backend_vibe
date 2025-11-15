@@ -18,6 +18,7 @@ class User(Base):
     email = Column(String(100), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     role = Column(Enum(UserRole), nullable=False, default=UserRole.CUSTOMER)  # Оставляем для обратной совместимости
+    telegram_id = Column(Integer, nullable=True, unique=True, index=True)  # Telegram ID пользователя
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -28,6 +29,9 @@ class User(Base):
     
     # Связь с множественными ролями
     role_assignments = relationship("RoleAssignment", foreign_keys="[RoleAssignment.user_id]", back_populates="user", cascade="all, delete-orphan")
+    
+    # Связь с настройками уведомлений
+    notification_settings = relationship("NotificationSettings", back_populates="user", uselist=False, cascade="all, delete-orphan")
     
     def get_roles(self) -> Set[str]:
         """
