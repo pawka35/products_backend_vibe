@@ -43,12 +43,23 @@ docker compose exec nginx chmod -R 755 /var/www/certbot
 
 # Проверяем доступность домена
 echo "🔍 Проверяем доступность домена $DOMAIN..."
-if ! curl -s -o /dev/null -w "%{http_code}" http://$DOMAIN/.well-known/acme-challenge/test 2>/dev/null | grep -q "404\|403"; then
-    echo "⚠️  Предупреждение: Домен может быть недоступен или nginx не настроен для ACME challenge"
-    echo "Проверьте, что:"
-    echo "  1. DNS запись для $DOMAIN указывает на IP сервера"
-    echo "  2. Используется временная конфигурация nginx (nginx.conf.template)"
-    echo "  3. Nginx запущен и доступен на порту 80"
+# Проверяем GET запрос (certbot использует GET, а не HEAD)
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://$DOMAIN/ 2>/dev/null)
+if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "301" ] || [ "$HTTP_CODE" = "302" ]; then
+    echo "   ✅ Домен доступен по HTTP (код: $HTTP_CODE)"
+else
+    echo "   ⚠️  HTTP код: $HTTP_CODE (405 для HEAD - это нормально, проверяем GET)"
+    # Проверяем GET запрос явно
+    GET_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X GET http://$DOMAIN/ 2>/dev/null)
+    if [ "$GET_CODE" = "200" ] || [ "$GET_CODE" = "301" ] || [ "$GET_CODE" = "302" ]; then
+        echo "   ✅ GET запрос работает (код: $GET_CODE)"
+    else
+        echo "   ⚠️  GET запрос вернул код: $GET_CODE"
+        echo "   Проверьте, что:"
+        echo "     1. DNS запись для $DOMAIN указывает на IP сервера"
+        echo "     2. Используется временная конфигурация nginx (nginx.conf.template)"
+        echo "     3. Nginx запущен и доступен на порту 80"
+    fi
 fi
 
 # Проверяем, что nginx может отдавать файлы из /var/www/certbot
@@ -59,12 +70,23 @@ if ! docker compose exec nginx test -d /var/www/certbot; then
 fi
 
 # Создаем тестовый файл для проверки
-echo "test-file" | docker compose exec -T nginx tee /var/www/certbot/test.txt > /dev/null
-if ! curl -s http://$DOMAIN/.well-known/acme-challenge/test.txt 2>/dev/null | grep -q "test-file"; then
-    echo "⚠️  Предупреждение: Nginx не может отдавать файлы из /var/www/certbot"
-    echo "Проверьте конфигурацию nginx - должен быть location /.well-known/acme-challenge/"
+echo "🔍 Тестируем ACME challenge endpoint..."
+TEST_FILE="test-$(date +%s).txt"
+echo "test-content" | docker compose exec -T nginx tee /var/www/certbot/$TEST_FILE > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    READ_CONTENT=$(curl -s http://$DOMAIN/.well-known/acme-challenge/$TEST_FILE 2>/dev/null)
+    if [ "$READ_CONTENT" = "test-content" ]; then
+        echo "   ✅ ACME challenge endpoint работает - файл успешно записан и прочитан"
+    else
+        echo "   ⚠️  ACME challenge endpoint: файл записан, но не читается через HTTP"
+        echo "   Получено: '$READ_CONTENT' (ожидалось: 'test-content')"
+        echo "   Проверьте конфигурацию nginx - должен быть location /.well-known/acme-challenge/"
+    fi
+    docker compose exec nginx rm -f /var/www/certbot/$TEST_FILE
+else
+    echo "   ⚠️  Не удалось записать тестовый файл в /var/www/certbot"
+    echo "   Проверьте права доступа к volume certbot_www"
 fi
-docker compose exec nginx rm -f /var/www/certbot/test.txt
 
 # Получаем сертификат
 echo "🔐 Получаем SSL сертификат от Let's Encrypt..."
