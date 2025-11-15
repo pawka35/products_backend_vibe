@@ -50,8 +50,10 @@ http {
         server_name products.bunkov.in;
 
         # ACME challenge для Certbot (Let's Encrypt)
+        # Certbot записывает файлы в /var/www/certbot/.well-known/acme-challenge/
         location /.well-known/acme-challenge/ {
             root /var/www/certbot;
+            try_files $uri =404;
         }
 
         # Редирект всех остальных запросов на HTTPS

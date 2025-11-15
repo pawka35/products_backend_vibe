@@ -71,8 +71,11 @@ fi
 
 # Создаем тестовый файл для проверки
 echo "🔍 Тестируем ACME challenge endpoint..."
+# Certbot записывает файлы в /var/www/certbot/.well-known/acme-challenge/
+TEST_DIR="/var/www/certbot/.well-known/acme-challenge"
 TEST_FILE="test-$(date +%s).txt"
-echo "test-content" | docker compose exec -T nginx tee /var/www/certbot/$TEST_FILE > /dev/null 2>&1
+docker compose exec nginx mkdir -p $TEST_DIR 2>/dev/null || true
+echo "test-content" | docker compose exec -T nginx tee $TEST_DIR/$TEST_FILE > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     READ_CONTENT=$(curl -s http://$DOMAIN/.well-known/acme-challenge/$TEST_FILE 2>/dev/null)
     if [ "$READ_CONTENT" = "test-content" ]; then
@@ -80,11 +83,12 @@ if [ $? -eq 0 ]; then
     else
         echo "   ⚠️  ACME challenge endpoint: файл записан, но не читается через HTTP"
         echo "   Получено: '$READ_CONTENT' (ожидалось: 'test-content')"
-        echo "   Проверьте конфигурацию nginx - должен быть location /.well-known/acme-challenge/"
+        echo "   Проверьте конфигурацию nginx - должен быть: alias /var/www/certbot/;"
+        echo "   Перезапустите nginx: docker compose restart nginx"
     fi
-    docker compose exec nginx rm -f /var/www/certbot/$TEST_FILE
+    docker compose exec nginx rm -f $TEST_DIR/$TEST_FILE
 else
-    echo "   ⚠️  Не удалось записать тестовый файл в /var/www/certbot"
+    echo "   ⚠️  Не удалось записать тестовый файл в $TEST_DIR"
     echo "   Проверьте права доступа к volume certbot_www"
 fi
 

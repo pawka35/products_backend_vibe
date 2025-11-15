@@ -83,8 +83,11 @@ echo ""
 
 # 7. Тест записи и чтения файла
 echo "7. Тест записи и чтения файла через ACME challenge..."
+# Certbot записывает файлы в /var/www/certbot/.well-known/acme-challenge/
+TEST_DIR="/var/www/certbot/.well-known/acme-challenge"
 TEST_FILE="test-$(date +%s).txt"
-echo "test-content" | docker compose exec -T nginx tee /var/www/certbot/$TEST_FILE > /dev/null 2>&1
+docker compose exec nginx mkdir -p $TEST_DIR 2>/dev/null || true
+echo "test-content" | docker compose exec -T nginx tee $TEST_DIR/$TEST_FILE > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     READ_CONTENT=$(curl -s http://$DOMAIN/.well-known/acme-challenge/$TEST_FILE)
     if [ "$READ_CONTENT" = "test-content" ]; then
@@ -92,10 +95,12 @@ if [ $? -eq 0 ]; then
     else
         echo "   ⚠️  Файл записан, но не читается через HTTP"
         echo "   Содержимое: $READ_CONTENT"
+        echo "   Проверьте конфигурацию nginx для location /.well-known/acme-challenge/"
+        echo "   Должно быть: alias /var/www/certbot/; (не root)"
     fi
-    docker compose exec nginx rm -f /var/www/certbot/$TEST_FILE
+    docker compose exec nginx rm -f $TEST_DIR/$TEST_FILE
 else
-    echo "   ❌ Не удалось записать файл в /var/www/certbot"
+    echo "   ❌ Не удалось записать файл в $TEST_DIR"
 fi
 echo ""
 
