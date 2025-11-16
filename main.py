@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 from database import engine, Base, wait_for_database
@@ -15,6 +16,7 @@ from database import SessionLocal
 from utils.logging_config import setup_logging
 from middleware.logging_middleware import LoggingMiddleware
 import time
+import os
 
 # Настраиваем логирование
 setup_logging()
@@ -101,6 +103,33 @@ app = FastAPI(
     description="Система аутентификации с JWT токенами, управлением пользователями и заказами",
     docs_url=None,  # Отключаем стандартную документацию
     redoc_url=None  # Отключаем стандартную документацию
+)
+
+# Настройка CORS
+# Получаем разрешенные origins из переменной окружения или используем значения по умолчанию
+cors_origins_str = os.getenv("CORS_ORIGINS", "https://products.bunkov.in")
+# Разбираем строку origins
+allowed_origins = [origin.strip() for origin in cors_origins_str.split(",") if origin.strip()]
+
+# Добавляем CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    # Разрешаем localhost с любым портом для разработки
+    allow_origin_regex=r"http://localhost:\d+|https://localhost:\d+",
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=[
+        "Content-Type",
+        "Authorization",
+        "Accept",
+        "Origin",
+        "X-Requested-With",
+        "Access-Control-Request-Method",
+        "Access-Control-Request-Headers",
+    ],
+    expose_headers=["*"],
+    max_age=3600,
 )
 
 # Добавляем middleware для логирования
