@@ -12,7 +12,7 @@ from auth.schemas.role_schemas import (
 )
 from auth.schemas.user_schemas import User as UserSchema
 
-router = APIRouter(prefix="/admin", tags=["admin"])
+router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 # ==================== УПРАВЛЕНИЕ РОЛЯМИ ====================
 

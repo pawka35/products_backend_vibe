@@ -22,7 +22,7 @@ def test_executor_get_customers():
         "password": "TestPass123!"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=executor_login)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=executor_login)
     
     if response.status_code != 200:
         # Создаем нового исполнителя
@@ -33,13 +33,13 @@ def test_executor_get_customers():
             "password": "TestPass123!",
             "role": "executor"
         }
-        response = requests.post(f"{BASE_URL}/auth/register", json=executor_data)
+        response = requests.post(f"{BASE_URL}/api/auth/register", json=executor_data)
         if response.status_code != 200:
             print(f"   Ошибка создания исполнителя: {response.text}")
             return
         
         # Теперь получаем токен
-        response = requests.post(f"{BASE_URL}/auth/token", data=executor_login)
+        response = requests.post(f"{BASE_URL}/api/auth/token", data=executor_login)
         if response.status_code != 200:
             print(f"   Ошибка получения токена: {response.text}")
             return
@@ -50,7 +50,7 @@ def test_executor_get_customers():
     
     # 2. Получаем список заказчиков
     print("\n2. Получение списка заказчиков...")
-    response = requests.get(f"{BASE_URL}/executor/customers", headers=executor_headers)
+    response = requests.get(f"{BASE_URL}/api/executor/customers", headers=executor_headers)
     
     if response.status_code == 200:
         customers = response.json()
@@ -75,7 +75,7 @@ def test_executor_get_customers():
         "password": "TestPass123!"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=customer_login)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=customer_login)
     
     if response.status_code != 200:
         # Создаем заказчика для теста
@@ -85,15 +85,15 @@ def test_executor_get_customers():
             "password": "TestPass123!",
             "role": "customer"
         }
-        requests.post(f"{BASE_URL}/auth/register", json=customer_data)
-        response = requests.post(f"{BASE_URL}/auth/token", data=customer_login)
+        requests.post(f"{BASE_URL}/api/auth/register", json=customer_data)
+        response = requests.post(f"{BASE_URL}/api/auth/token", data=customer_login)
     
     if response.status_code == 200:
         customer_token = response.json()["access_token"]
         customer_headers = {"Authorization": f"Bearer {customer_token}"}
         
         # Пытаемся получить список заказчиков под заказчиком (должно быть запрещено)
-        response = requests.get(f"{BASE_URL}/executor/customers", headers=customer_headers)
+        response = requests.get(f"{BASE_URL}/api/executor/customers", headers=customer_headers)
         
         if response.status_code == 403:
             print("   ✅ Доступ правильно запрещен для не-исполнителя")

@@ -51,26 +51,26 @@ auth/
 ## 📚 API Endpoints
 
 ### Аутентификация
-- `POST /auth/register` - Регистрация пользователя
-- `POST /auth/token` - Получение JWT токена
-- `GET /auth/me` - Информация о текущем пользователе
-- `PUT /auth/me` - Обновление профиля пользователя (username и/или email)
-- `PUT /auth/me/password` - Изменение пароля пользователя
+- `POST /api/auth/register` - Регистрация пользователя
+- `POST /api/auth/token` - Получение JWT токена
+- `GET /api/auth/me` - Информация о текущем пользователе
+- `PUT /api/auth/me` - Обновление профиля пользователя (username и/или email)
+- `PUT /api/auth/me/password` - Изменение пароля пользователя
 
 ### Управление ролями (только для администраторов)
-- `GET /admin/roles` - Список всех ролей
-- `POST /admin/roles` - Создание новой роли
-- `GET /admin/roles/{id}` - Получение роли по ID
-- `PUT /admin/roles/{id}` - Обновление роли
-- `DELETE /admin/roles/{id}` - Удаление роли
-- `POST /admin/roles/{id}/activate` - Активация роли
+- `GET /api/admin/roles` - Список всех ролей
+- `POST /api/admin/roles` - Создание новой роли
+- `GET /api/admin/roles/{id}` - Получение роли по ID
+- `PUT /api/admin/roles/{id}` - Обновление роли
+- `DELETE /api/admin/roles/{id}` - Удаление роли
+- `POST /api/admin/roles/{id}/activate` - Активация роли
 
 ### Управление назначениями ролей
-- `GET /admin/roles/users/{id}` - Роли пользователя
-- `GET /admin/roles/{id}/users` - Пользователи с ролью
-- `POST /admin/roles/users/assign` - Назначение роли пользователю
-- `PUT /admin/roles/users/{id}` - Обновление роли пользователя
-- `DELETE /admin/roles/users/{id}` - Удаление роли у пользователя
+- `GET /api/admin/roles/users/{id}` - Роли пользователя
+- `GET /api/admin/roles/{id}/users` - Пользователи с ролью
+- `POST /api/admin/roles/users/assign` - Назначение роли пользователю
+- `PUT /api/admin/roles/users/{id}` - Обновление роли пользователя
+- `DELETE /api/admin/roles/users/{id}` - Удаление роли у пользователя
 
 ## 🔒 Модели данных
 
@@ -129,13 +129,13 @@ class RoleAssignment(Base):
 ### Логика работы
 1. **Базовая роль** - хранится в таблице `users.role`
 2. **Дополнительные роли** - хранятся в таблице `user_roles`
-3. **Эндпоинт `/admin/roles/users/{id}`** показывает все роли пользователя
+3. **Эндпоинт `/api/admin/roles/users/{id}`** показывает все роли пользователя
 
 ## 🔐 Безопасность
 
 ### Защита от создания администраторов
 - Валидатор в `UserBase` и `UserUpdate` схемах
-- Проверка в `/auth/register` эндпоинте
+- Проверка в `/api/auth/register` эндпоинте
 - Только автоматическая инициализация первого администратора
 
 ### JWT токены
@@ -189,7 +189,7 @@ python auth/tests/test_admin_init.py
 
 #### Регистрация пользователя
 ```bash
-curl -X POST "http://localhost:8000/auth/register" \
+curl -X POST "http://localhost:8000/api/auth/register" \
   -H "Content-Type: application/json" \
   -d '{
     "username": "john_doe",
@@ -201,7 +201,7 @@ curl -X POST "http://localhost:8000/auth/register" \
 
 #### Получение токена
 ```bash
-curl -X POST "http://localhost:8000/auth/token" \
+curl -X POST "http://localhost:8000/api/auth/token" \
   -d "username=john_doe&password=SecurePass123!"
 ```
 
@@ -209,7 +209,7 @@ curl -X POST "http://localhost:8000/auth/token" \
 
 #### Изменение username
 ```bash
-curl -X PUT "http://localhost:8000/auth/me" \
+curl -X PUT "http://localhost:8000/api/auth/me" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -235,7 +235,7 @@ curl -X PUT "http://localhost:8000/auth/me" \
 
 #### Изменение email
 ```bash
-curl -X PUT "http://localhost:8000/auth/me" \
+curl -X PUT "http://localhost:8000/api/auth/me" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -245,7 +245,7 @@ curl -X PUT "http://localhost:8000/auth/me" \
 
 #### Изменение username и email одновременно
 ```bash
-curl -X PUT "http://localhost:8000/auth/me" \
+curl -X PUT "http://localhost:8000/api/auth/me" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -257,7 +257,7 @@ curl -X PUT "http://localhost:8000/auth/me" \
 ### Изменение пароля
 
 ```bash
-curl -X PUT "http://localhost:8000/auth/me/password" \
+curl -X PUT "http://localhost:8000/api/auth/me/password" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -292,7 +292,7 @@ curl -X PUT "http://localhost:8000/auth/me/password" \
 
 #### Создание роли
 ```python
-# POST /admin/roles/
+# POST /api/admin/roles
 {
     "name": "moderator",
     "description": "Роль модератора",
@@ -302,7 +302,7 @@ curl -X PUT "http://localhost:8000/auth/me/password" \
 
 #### Назначение роли пользователю
 ```python
-# POST /admin/roles/users/assign
+# POST /api/admin/roles/users/assign
 {
     "user_id": 1,
     "role_id": 4
@@ -311,7 +311,7 @@ curl -X PUT "http://localhost:8000/auth/me/password" \
 
 #### Получение ролей пользователя
 ```python
-# GET /admin/roles/users/1
+# GET /api/admin/roles/users/1
 [
     {
         "role_name": "customer",

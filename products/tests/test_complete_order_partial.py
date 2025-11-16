@@ -20,7 +20,7 @@ def test_complete_order_partial_products():
         "password": "Admin123!"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=admin_login)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=admin_login)
     if response.status_code != 200:
         print(f"   ❌ Ошибка получения токена админа: {response.text}")
         return
@@ -43,7 +43,7 @@ def test_complete_order_partial_products():
         "role": "customer"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/register", json=customer_data)
+    response = requests.post(f"{BASE_URL}/api/auth/register", json=customer_data)
     if response.status_code != 200:
         print(f"   ❌ Ошибка создания заказчика: {response.text}")
         return
@@ -76,7 +76,7 @@ def test_complete_order_partial_products():
         "password": customer_data['password']
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=customer_login)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=customer_login)
     if response.status_code != 200:
         print(f"   ❌ Ошибка получения токена заказчика: {response.text}")
         return
@@ -91,7 +91,7 @@ def test_complete_order_partial_products():
         "password": executor_data['password']
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=executor_login)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=executor_login)
     if response.status_code != 200:
         print(f"   ❌ Ошибка получения токена исполнителя: {response.text}")
         return
@@ -120,7 +120,7 @@ def test_complete_order_partial_products():
         ]
     }
     
-    response = requests.post(f"{BASE_URL}/customer/orders", json=order_data, headers=customer_headers)
+    response = requests.post(f"{BASE_URL}/api/customer/orders", json=order_data, headers=customer_headers)
     if response.status_code != 200:
         print(f"   ❌ Ошибка создания заказа: {response.text}")
         return
@@ -134,7 +134,7 @@ def test_complete_order_partial_products():
     status_update = {"status": "in_progress"}
     
     response = requests.put(
-        f"{BASE_URL}/executor/orders/{order['id']}/status",
+        f"{BASE_URL}/api/executor/orders/{order['id']}/status",
         json=status_update,
         headers=executor_headers
     )
@@ -158,7 +158,7 @@ def test_complete_order_partial_products():
         }
         
         response = requests.put(
-            f"{BASE_URL}/executor/products/{product['id']}/purchase",
+            f"{BASE_URL}/api/executor/products/{product['id']}/purchase",
             json=purchase_data,
             headers=executor_headers
         )
@@ -175,7 +175,7 @@ def test_complete_order_partial_products():
     print("\n7. Тест 1: Попытка завершить заказ без комментария (не все продукты куплены)...")
     
     response = requests.put(
-        f"{BASE_URL}/executor/orders/{order['id']}/complete",
+        f"{BASE_URL}/api/executor/orders/{order['id']}/complete",
         headers=executor_headers
     )
     
@@ -194,7 +194,7 @@ def test_complete_order_partial_products():
     }
     
     response = requests.put(
-        f"{BASE_URL}/executor/orders/{order['id']}/complete",
+        f"{BASE_URL}/api/executor/orders/{order['id']}/complete",
         json=complete_data,
         headers=executor_headers
     )
@@ -213,7 +213,7 @@ def test_complete_order_partial_products():
     }
     
     response = requests.put(
-        f"{BASE_URL}/executor/orders/{order['id']}/complete",
+        f"{BASE_URL}/api/executor/orders/{order['id']}/complete",
         json=complete_data,
         headers=executor_headers
     )
@@ -236,12 +236,12 @@ def test_complete_order_partial_products():
     print("\n10. Тест 4: Завершение заказа со всеми купленными продуктами без комментария...")
     
     # Создаем новый заказ
-    response = requests.post(f"{BASE_URL}/customer/orders", json=order_data, headers=customer_headers)
+    response = requests.post(f"{BASE_URL}/api/customer/orders", json=order_data, headers=customer_headers)
     test_order_2 = response.json()
     
     # Берем в работу
     requests.put(
-        f"{BASE_URL}/executor/orders/{test_order_2['id']}/status",
+        f"{BASE_URL}/api/executor/orders/{test_order_2['id']}/status",
         json={"status": "in_progress"},
         headers=executor_headers
     )
@@ -249,7 +249,7 @@ def test_complete_order_partial_products():
     # Покупаем ВСЕ продукты
     for product in test_order_2['products']:
         requests.put(
-            f"{BASE_URL}/executor/products/{product['id']}/purchase",
+            f"{BASE_URL}/api/executor/products/{product['id']}/purchase",
             json={"is_purchased": True},
             headers=executor_headers
         )
@@ -258,7 +258,7 @@ def test_complete_order_partial_products():
     
     # Завершаем БЕЗ комментария
     response = requests.put(
-        f"{BASE_URL}/executor/orders/{test_order_2['id']}/complete",
+        f"{BASE_URL}/api/executor/orders/{test_order_2['id']}/complete",
         headers=executor_headers
     )
     
@@ -274,12 +274,12 @@ def test_complete_order_partial_products():
     print("\n11. Тест 5: Завершение заказа со всеми купленными продуктами с комментарием...")
     
     # Создаем еще один заказ
-    response = requests.post(f"{BASE_URL}/customer/orders", json=order_data, headers=customer_headers)
+    response = requests.post(f"{BASE_URL}/api/customer/orders", json=order_data, headers=customer_headers)
     test_order_3 = response.json()
     
     # Берем в работу
     requests.put(
-        f"{BASE_URL}/executor/orders/{test_order_3['id']}/status",
+        f"{BASE_URL}/api/executor/orders/{test_order_3['id']}/status",
         json={"status": "in_progress"},
         headers=executor_headers
     )
@@ -287,7 +287,7 @@ def test_complete_order_partial_products():
     # Покупаем ВСЕ продукты
     for product in test_order_3['products']:
         requests.put(
-            f"{BASE_URL}/executor/products/{product['id']}/purchase",
+            f"{BASE_URL}/api/executor/products/{product['id']}/purchase",
             json={"is_purchased": True},
             headers=executor_headers
         )
@@ -298,7 +298,7 @@ def test_complete_order_partial_products():
     }
     
     response = requests.put(
-        f"{BASE_URL}/executor/orders/{test_order_3['id']}/complete",
+        f"{BASE_URL}/api/executor/orders/{test_order_3['id']}/complete",
         json=complete_data,
         headers=executor_headers
     )

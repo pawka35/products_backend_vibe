@@ -39,7 +39,7 @@ def test_api_flow():
         "role": "customer"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/register", json=user_data)
+    response = requests.post(f"{BASE_URL}/api/auth/register", json=user_data)
     if response.status_code != 200:
         print(f"   Ошибка регистрации: {response.text}")
         return
@@ -54,7 +54,7 @@ def test_api_flow():
         "password": "apitest123"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=login_data)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=login_data)
     if response.status_code != 200:
         print(f"   Ошибка получения токена: {response.text}")
         return
@@ -67,7 +67,7 @@ def test_api_flow():
     print("\n5. Тест защищенных эндпоинтов...")
     
     # 5.1 Проверка /auth/me
-    response = requests.get(f"{BASE_URL}/auth/me", headers=headers)
+    response = requests.get(f"{BASE_URL}/api/auth/me", headers=headers)
     if response.status_code != 200:
         print(f"     Ошибка /auth/me: {response.text}")
     else:

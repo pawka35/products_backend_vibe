@@ -20,7 +20,7 @@ def test_complete_order_with_comment():
         "password": "Admin123!"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=admin_login)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=admin_login)
     if response.status_code != 200:
         print(f"   ❌ Ошибка получения токена админа: {response.text}")
         return
@@ -43,7 +43,7 @@ def test_complete_order_with_comment():
         "role": "customer"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/register", json=customer_data)
+    response = requests.post(f"{BASE_URL}/api/auth/register", json=customer_data)
     if response.status_code != 200:
         print(f"   ❌ Ошибка создания заказчика: {response.text}")
         return
@@ -76,7 +76,7 @@ def test_complete_order_with_comment():
         "password": customer_data['password']
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=customer_login)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=customer_login)
     if response.status_code != 200:
         print(f"   ❌ Ошибка получения токена заказчика: {response.text}")
         return
@@ -91,7 +91,7 @@ def test_complete_order_with_comment():
         "password": executor_data['password']
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=executor_login)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=executor_login)
     if response.status_code != 200:
         print(f"   ❌ Ошибка получения токена исполнителя: {response.text}")
         return
@@ -116,7 +116,7 @@ def test_complete_order_with_comment():
         ]
     }
     
-    response = requests.post(f"{BASE_URL}/customer/orders", json=order_data, headers=customer_headers)
+    response = requests.post(f"{BASE_URL}/api/customer/orders", json=order_data, headers=customer_headers)
     if response.status_code != 200:
         print(f"   ❌ Ошибка создания заказа: {response.text}")
         return
@@ -129,7 +129,7 @@ def test_complete_order_with_comment():
     status_update = {"status": "in_progress"}
     
     response = requests.put(
-        f"{BASE_URL}/executor/orders/{order['id']}/status",
+        f"{BASE_URL}/api/executor/orders/{order['id']}/status",
         json=status_update,
         headers=executor_headers
     )
@@ -151,7 +151,7 @@ def test_complete_order_with_comment():
         }
         
         response = requests.put(
-            f"{BASE_URL}/executor/products/{product['id']}/purchase",
+            f"{BASE_URL}/api/executor/products/{product['id']}/purchase",
             json=purchase_data,
             headers=executor_headers
         )
@@ -165,12 +165,12 @@ def test_complete_order_with_comment():
     print("\n7. Тест 1: Завершение заказа без комментария...")
     
     # Создаем еще один заказ для этого теста
-    response = requests.post(f"{BASE_URL}/customer/orders", json=order_data, headers=customer_headers)
+    response = requests.post(f"{BASE_URL}/api/customer/orders", json=order_data, headers=customer_headers)
     test_order_1 = response.json()
     
     # Берем в работу
     response = requests.put(
-        f"{BASE_URL}/executor/orders/{test_order_1['id']}/status",
+        f"{BASE_URL}/api/executor/orders/{test_order_1['id']}/status",
         json={"status": "in_progress"},
         headers=executor_headers
     )
@@ -178,14 +178,14 @@ def test_complete_order_with_comment():
     # Отмечаем все продукты как купленные
     for product in test_order_1['products']:
         requests.put(
-            f"{BASE_URL}/executor/products/{product['id']}/purchase",
+            f"{BASE_URL}/api/executor/products/{product['id']}/purchase",
             json={"is_purchased": True},
             headers=executor_headers
         )
     
     # Завершаем без комментария
     response = requests.put(
-        f"{BASE_URL}/executor/orders/{test_order_1['id']}/complete",
+        f"{BASE_URL}/api/executor/orders/{test_order_1['id']}/complete",
         headers=executor_headers
     )
     
@@ -207,12 +207,12 @@ def test_complete_order_with_comment():
     print("\n8. Тест 2: Завершение заказа с комментарием...")
     
     # Создаем третий заказ для этого теста
-    response = requests.post(f"{BASE_URL}/customer/orders", json=order_data, headers=customer_headers)
+    response = requests.post(f"{BASE_URL}/api/customer/orders", json=order_data, headers=customer_headers)
     test_order_2 = response.json()
     
     # Берем в работу
     response = requests.put(
-        f"{BASE_URL}/executor/orders/{test_order_2['id']}/status",
+        f"{BASE_URL}/api/executor/orders/{test_order_2['id']}/status",
         json={"status": "in_progress"},
         headers=executor_headers
     )
@@ -220,7 +220,7 @@ def test_complete_order_with_comment():
     # Отмечаем все продукты как купленные
     for product in test_order_2['products']:
         requests.put(
-            f"{BASE_URL}/executor/products/{product['id']}/purchase",
+            f"{BASE_URL}/api/executor/products/{product['id']}/purchase",
             json={"is_purchased": True},
             headers=executor_headers
         )
@@ -231,7 +231,7 @@ def test_complete_order_with_comment():
     }
     
     response = requests.put(
-        f"{BASE_URL}/executor/orders/{test_order_2['id']}/complete",
+        f"{BASE_URL}/api/executor/orders/{test_order_2['id']}/complete",
         json=complete_data,
         headers=executor_headers
     )
@@ -256,7 +256,7 @@ def test_complete_order_with_comment():
     print("\n9. Проверка видимости комментария при получении заказа...")
     
     response = requests.get(
-        f"{BASE_URL}/customer/orders/{test_order_2['id']}",
+        f"{BASE_URL}/api/customer/orders/{test_order_2['id']}",
         headers=customer_headers
     )
     

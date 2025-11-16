@@ -16,7 +16,7 @@ def test_admin_initialization():
         "password": "Admin123!"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=admin_login)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=admin_login)
     if response.status_code != 200:
         print(f"   ❌ Ошибка получения токена админа: {response.text}")
         return
@@ -27,7 +27,7 @@ def test_admin_initialization():
     
     # 2. Проверка информации об администраторе
     print("\n2. Проверка информации об администраторе...")
-    response = requests.get(f"{BASE_URL}/auth/me", headers=admin_headers)
+    response = requests.get(f"{BASE_URL}/api/auth/me", headers=admin_headers)
     if response.status_code != 200:
         print(f"   ❌ Ошибка получения информации об админе: {response.text}")
         return
@@ -40,7 +40,7 @@ def test_admin_initialization():
     
     # 3. Проверка базовых ролей
     print("\n3. Проверка базовых ролей...")
-    response = requests.get(f"{BASE_URL}/admin/roles/", headers=admin_headers)
+    response = requests.get(f"{BASE_URL}/api/admin/roles/", headers=admin_headers)
     if response.status_code != 200:
         print(f"   ❌ Ошибка получения ролей: {response.text}")
         return
@@ -76,7 +76,7 @@ def test_admin_registration_protection():
         "role": "admin"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/register", json=admin_user_data)
+    response = requests.post(f"{BASE_URL}/api/auth/register", json=admin_user_data)
     if response.status_code == 403:
         print("   ✅ Создание пользователя с ролью администратора заблокировано")
         error_detail = response.json().get('detail', '')
@@ -97,7 +97,7 @@ def test_admin_registration_protection():
         "role": "customer"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/register", json=regular_user_data)
+    response = requests.post(f"{BASE_URL}/api/auth/register", json=regular_user_data)
     if response.status_code == 200:
         print("   ✅ Создание пользователя с обычной ролью разрешено")
         user = response.json()
@@ -112,7 +112,7 @@ def test_admin_registration_protection():
         "password": "fakeadmin123"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=fake_admin_login)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=fake_admin_login)
     if response.status_code == 401:
         print("   ✅ Пользователь fakeadmin не может войти (не создан)")
     else:

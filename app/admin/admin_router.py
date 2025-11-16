@@ -35,7 +35,7 @@ from products.schemas import (
 )
 from products.models import OrderStatus
 
-router = APIRouter(prefix="/admin", tags=["admin"])
+router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 def require_admin(current_user: UserModel = Depends(get_current_active_user)):
     """

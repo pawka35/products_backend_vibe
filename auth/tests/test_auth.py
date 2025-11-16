@@ -19,7 +19,7 @@ def cleanup_users():
         "password": "Admin123!"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=admin_login)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=admin_login)
     if response.status_code != 200:
         print("❌ Не удалось получить токен администратора для очистки")
         return
@@ -30,7 +30,7 @@ def cleanup_users():
     deleted_count = 0
     for user_id in created_user_ids:
         response = requests.delete(
-            f"{BASE_URL}/admin/users/{user_id}",
+            f"{BASE_URL}/api/admin/users/{user_id}",
             headers=headers
         )
         if response.status_code in [200, 204]:
@@ -54,7 +54,7 @@ def test_auth_flow():
         "role": "customer"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/register", json=user_data)
+    response = requests.post(f"{BASE_URL}/api/auth/register", json=user_data)
     if response.status_code != 200:
         print(f"   Ошибка регистрации: {response.text}")
         return
@@ -70,7 +70,7 @@ def test_auth_flow():
         "password": "testpassword123"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=login_data)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=login_data)
     if response.status_code != 200:
         print(f"   Ошибка получения токена: {response.text}")
         return
@@ -81,7 +81,7 @@ def test_auth_flow():
     
     # 3. Тест защищенного эндпоинта
     print("\n3. Тест защищенного эндпоинта...")
-    response = requests.get(f"{BASE_URL}/auth/me", headers=headers)
+    response = requests.get(f"{BASE_URL}/api/auth/me", headers=headers)
     if response.status_code != 200:
         print(f"   Ошибка доступа к /auth/me: {response.text}")
         return
@@ -112,7 +112,7 @@ def test_user_profile_update():
         "role": "customer"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/register", json=user_data)
+    response = requests.post(f"{BASE_URL}/api/auth/register", json=user_data)
     if response.status_code != 200:
         print(f"   Ошибка регистрации: {response.text}")
         return
@@ -128,7 +128,7 @@ def test_user_profile_update():
         "password": user_data['password']
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=login_data)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=login_data)
     if response.status_code != 200:
         print(f"   Ошибка получения токена: {response.text}")
         return
@@ -144,7 +144,7 @@ def test_user_profile_update():
         "username": new_username
     }
     
-    response = requests.put(f"{BASE_URL}/auth/me", json=update_data, headers=headers)
+    response = requests.put(f"{BASE_URL}/api/auth/me", json=update_data, headers=headers)
     if response.status_code == 200:
         result = response.json()
         print(f"   Username обновлен: {result['user']['username']}")
@@ -158,7 +158,7 @@ def test_user_profile_update():
         "email": new_email
     }
     
-    response = requests.put(f"{BASE_URL}/auth/me", json=update_data, headers=headers)
+    response = requests.put(f"{BASE_URL}/api/auth/me", json=update_data, headers=headers)
     if response.status_code == 200:
         result = response.json()
         print(f"   Email обновлен: {result['user']['email']}")
@@ -174,7 +174,7 @@ def test_user_profile_update():
         "email": new_email2
     }
     
-    response = requests.put(f"{BASE_URL}/auth/me", json=update_data, headers=headers)
+    response = requests.put(f"{BASE_URL}/api/auth/me", json=update_data, headers=headers)
     if response.status_code == 200:
         result = response.json()
         print(f"   Оба поля обновлены:")
@@ -185,7 +185,7 @@ def test_user_profile_update():
     
     # 6. Попытка обновить без указания полей (должна быть ошибка)
     print("\n6. Попытка обновления без указания полей...")
-    response = requests.put(f"{BASE_URL}/auth/me", json={}, headers=headers)
+    response = requests.put(f"{BASE_URL}/api/auth/me", json={}, headers=headers)
     if response.status_code == 400:
         print(f"   Ожидаемая ошибка: {response.json()['detail']}")
     else:
@@ -198,7 +198,7 @@ def test_user_profile_update():
         "new_password": "NewTestPass456!"
     }
     
-    response = requests.put(f"{BASE_URL}/auth/me/password", json=password_data, headers=headers)
+    response = requests.put(f"{BASE_URL}/api/auth/me/password", json=password_data, headers=headers)
     if response.status_code == 200:
         result = response.json()
         print(f"   Пароль изменен успешно: {result['message']}")
@@ -212,7 +212,7 @@ def test_user_profile_update():
         "password": "TestPass123!"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=old_login_data)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=old_login_data)
     if response.status_code == 401:
         print("   Правильно: вход со старым паролем отклонен")
     else:
@@ -225,14 +225,14 @@ def test_user_profile_update():
         "password": "NewTestPass456!"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=new_login_data)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=new_login_data)
     if response.status_code == 200:
         print("   Вход с новым паролем успешен")
         new_token = response.json()["access_token"]
         new_headers = {"Authorization": f"Bearer {new_token}"}
         
         # Проверяем профиль с новым токеном
-        response = requests.get(f"{BASE_URL}/auth/me", headers=new_headers)
+        response = requests.get(f"{BASE_URL}/api/auth/me", headers=new_headers)
         if response.status_code == 200:
             user_info = response.json()
             print(f"   Профиль получен: {user_info['username']}")
@@ -244,7 +244,7 @@ def test_user_profile_update():
             "new_password": "AnotherPass789!"
         }
         
-        response = requests.put(f"{BASE_URL}/auth/me/password", json=wrong_password_data, headers=new_headers)
+        response = requests.put(f"{BASE_URL}/api/auth/me/password", json=wrong_password_data, headers=new_headers)
         if response.status_code == 400:
             print(f"   Ожидаемая ошибка: {response.json()['detail']}")
         else:

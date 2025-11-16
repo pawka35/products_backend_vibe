@@ -127,30 +127,32 @@ docker compose down
 ### Основные
 - `GET /` - Главная страница
 - `GET /health` - Проверка здоровья сервиса
-- `GET /docs` - Swagger документация
+- `GET /api/docs` - Swagger документация
+- `GET /api/redoc` - ReDoc документация
+- `GET /api/openapi.json` - OpenAPI схема
 
 ### Аутентификация
-- `POST /auth/register` - Регистрация пользователя
-- `POST /auth/token` - Получение JWT токена
-- `GET /auth/me` - Информация о текущем пользователе
+- `POST /api/auth/register` - Регистрация пользователя
+- `POST /api/auth/token` - Получение JWT токена
+- `GET /api/auth/me` - Информация о текущем пользователе
 
 ### Пользователи
 - `GET /users/` - Список всех пользователей
 - `GET /users/{id}` - Информация о пользователе
 
 ### Административные функции
-- `GET /admin/statistics` - Статистика пользователей
-- `GET /admin/users` - Управление пользователями
-- `PUT /admin/users/{id}/role` - Изменение роли пользователя
-- `PUT /admin/users/{id}/password` - Изменение пароля
+- `GET /api/admin/statistics` - Статистика пользователей
+- `GET /api/admin/users` - Управление пользователями
+- `PUT /api/admin/users/{id}/role` - Изменение роли пользователя
+- `PUT /api/admin/users/{id}/password` - Изменение пароля
 
 ### Управление ролями (только для администраторов)
-- `GET /admin/roles` - Список всех ролей
-- `POST /admin/roles` - Создание новой роли
-- `GET /admin/roles/users/{id}` - Роли пользователя
-- `GET /admin/roles/{id}/users` - Пользователи с ролью
-- `POST /admin/roles/users/assign` - Назначение роли пользователю
-- `DELETE /admin/roles/users/{id}` - Удаление роли у пользователя
+- `GET /api/admin/roles` - Список всех ролей
+- `POST /api/admin/roles` - Создание новой роли
+- `GET /api/admin/roles/users/{id}` - Роли пользователя
+- `GET /api/admin/roles/{id}/users` - Пользователи с ролью
+- `POST /api/admin/roles/users/assign` - Назначение роли пользователю
+- `DELETE /api/admin/roles/users/{id}` - Удаление роли у пользователя
 
 ### Заказы
 - `GET /orders/` - Список заказов
@@ -158,10 +160,10 @@ docker compose down
 - `GET /orders/{id}/summary` - Сводка по заказу
 
 ### Исполнение заказов
-- `GET /executor/orders` - Доступные заказы
-- `PUT /executor/orders/{id}/start` - Начало исполнения
-- `PUT /executor/products/{id}/purchase` - Отметка покупки
-- `PUT /executor/orders/{id}/complete` - Завершение заказа
+- `GET /api/executor/orders` - Доступные заказы
+- `PUT /api/executor/orders/{id}/start` - Начало исполнения
+- `PUT /api/executor/products/{id}/purchase` - Отметка покупки
+- `PUT /api/executor/orders/{id}/complete` - Завершение заказа
 
 ### Поиск продуктов
 - `POST /products/search` - Поиск продуктов с пагинацией

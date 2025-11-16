@@ -20,7 +20,7 @@ def test_cancel_order():
         "password": "Admin123!"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=admin_login)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=admin_login)
     if response.status_code != 200:
         print(f"   ❌ Ошибка получения токена админа: {response.text}")
         return
@@ -68,7 +68,7 @@ def test_cancel_order():
         "role": "customer"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/register", json=customer_data)
+    response = requests.post(f"{BASE_URL}/api/auth/register", json=customer_data)
     if response.status_code != 200:
         print(f"   ❌ Ошибка создания заказчика: {response.text}")
         return
@@ -83,7 +83,7 @@ def test_cancel_order():
         "password": customer_data['password']
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=customer_login)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=customer_login)
     if response.status_code != 200:
         print(f"   ❌ Ошибка получения токена: {response.text}")
         return
@@ -106,7 +106,7 @@ def test_cancel_order():
         ]
     }
     
-    response = requests.post(f"{BASE_URL}/customer/orders", json=order_data, headers=customer_headers)
+    response = requests.post(f"{BASE_URL}/api/customer/orders", json=order_data, headers=customer_headers)
     if response.status_code != 200:
         print(f"   ❌ Ошибка создания заказа: {response.text}")
         return
@@ -116,7 +116,7 @@ def test_cancel_order():
     
     # 5. Отменяем заказ
     print("\n5. Отмена заказа...")
-    response = requests.post(f"{BASE_URL}/customer/orders/{order['id']}/cancel", headers=customer_headers)
+    response = requests.post(f"{BASE_URL}/api/customer/orders/{order['id']}/cancel", headers=customer_headers)
     
     if response.status_code == 200:
         cancelled_order = response.json()
@@ -132,7 +132,7 @@ def test_cancel_order():
     
     # 6. Проверяем, что нельзя отменить уже отмененный заказ
     print("\n6. Попытка повторной отмены заказа...")
-    response = requests.post(f"{BASE_URL}/customer/orders/{order['id']}/cancel", headers=customer_headers)
+    response = requests.post(f"{BASE_URL}/api/customer/orders/{order['id']}/cancel", headers=customer_headers)
     
     if response.status_code == 400:
         error = response.json()
@@ -143,7 +143,7 @@ def test_cancel_order():
     
     # 7. Создаем новый заказ и проверяем, что нельзя отменить заказ в работе
     print("\n7. Создание нового заказа для проверки статуса IN_PROGRESS...")
-    response = requests.post(f"{BASE_URL}/customer/orders", json=order_data, headers=customer_headers)
+    response = requests.post(f"{BASE_URL}/api/customer/orders", json=order_data, headers=customer_headers)
     
     if response.status_code == 200:
         order2 = response.json()
@@ -155,7 +155,7 @@ def test_cancel_order():
             "password": "TestPass123!" if not executor.get('username') == 'admin' else "Admin123!"
         }
         
-        response = requests.post(f"{BASE_URL}/auth/token", data=executor_login)
+        response = requests.post(f"{BASE_URL}/api/auth/token", data=executor_login)
         if response.status_code == 200:
             executor_token = response.json()["access_token"]
             executor_headers = {"Authorization": f"Bearer {executor_token}"}
@@ -174,7 +174,7 @@ def test_cancel_order():
                 # Пытаемся отменить заказ в работе
                 print("\n8. Попытка отмены заказа в статусе IN_PROGRESS...")
                 response = requests.post(
-                    f"{BASE_URL}/customer/orders/{order2['id']}/cancel",
+                    f"{BASE_URL}/api/customer/orders/{order2['id']}/cancel",
                     headers=customer_headers
                 )
                 

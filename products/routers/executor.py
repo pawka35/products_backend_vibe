@@ -29,7 +29,7 @@ from products.crud import (
 from auth.crud import get_users_by_role
 from auth.schemas import UserList
 
-router = APIRouter(prefix="/executor", tags=["executor"])
+router = APIRouter(prefix="/api/executor", tags=["executor"])
 
 def require_executor(current_user: UserModel = Depends(get_current_active_user)):
     """

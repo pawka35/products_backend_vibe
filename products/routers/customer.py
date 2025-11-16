@@ -42,7 +42,7 @@ from auth.crud import get_user, get_users_by_role
 from auth.schemas import UserList
 from products.services import MaxiRetailSearchService
 
-router = APIRouter(prefix="/customer", tags=["customer"])
+router = APIRouter(prefix="/api/customer", tags=["customer"])
 
 def require_customer(current_user: UserModel = Depends(get_current_active_user)):
     """

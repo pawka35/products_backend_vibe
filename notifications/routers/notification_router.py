@@ -25,7 +25,7 @@ from notifications.crud import (
 from notifications.services import TelegramService
 from config import settings
 
-router = APIRouter(prefix="/notifications", tags=["notifications"])
+router = APIRouter(prefix="/api/notifications", tags=["notifications"])
 
 
 @router.post("/telegram/request-code", response_model=VerificationCodeResponse)

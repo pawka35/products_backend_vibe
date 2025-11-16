@@ -18,7 +18,7 @@ def test_orders_functionality():
         "role": "customer"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/register", json=customer_data)
+    response = requests.post(f"{BASE_URL}/api/auth/register", json=customer_data)
     if response.status_code != 200:
         print(f"   Ошибка создания заказчика: {response.text}")
         return
@@ -35,7 +35,7 @@ def test_orders_functionality():
         "role": "executor"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/register", json=executor_data)
+    response = requests.post(f"{BASE_URL}/api/auth/register", json=executor_data)
     if response.status_code != 200:
         print(f"   Ошибка создания исполнителя: {response.text}")
         return
@@ -50,7 +50,7 @@ def test_orders_functionality():
         "password": "customer123"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=customer_login)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=customer_login)
     if response.status_code != 200:
         print(f"   Ошибка получения токена заказчика: {response.text}")
         return
@@ -98,7 +98,7 @@ def test_orders_functionality():
         "password": "executor123"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=executor_login)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=executor_login)
     if response.status_code != 200:
         print(f"   Ошибка получения токена исполнителя: {response.text}")
         return
@@ -109,7 +109,7 @@ def test_orders_functionality():
     
     # 6. Исполнитель просматривает доступные заказы
     print("\n6. Просмотр доступных заказов исполнителем...")
-    response = requests.get(f"{BASE_URL}/executor/orders", headers=executor_headers)
+    response = requests.get(f"{BASE_URL}/api/executor/orders", headers=executor_headers)
     if response.status_code != 200:
         print(f"   Ошибка получения заказов: {response.text}")
         return
@@ -119,7 +119,7 @@ def test_orders_functionality():
     
     # 7. Исполнитель начинает исполнение заказа
     print("\n7. Начало исполнения заказа...")
-    response = requests.put(f"{BASE_URL}/executor/orders/{order_id}/start", headers=executor_headers)
+    response = requests.put(f"{BASE_URL}/api/executor/orders/{order_id}/start", headers=executor_headers)
     if response.status_code != 200:
         print(f"   Ошибка начала исполнения: {response.text}")
         return
@@ -130,7 +130,7 @@ def test_orders_functionality():
     print("\n8. Отметка продуктов как купленных...")
     
     # Получаем детали заказа для получения ID продуктов
-    response = requests.get(f"{BASE_URL}/executor/orders/{order_id}", headers=executor_headers)
+    response = requests.get(f"{BASE_URL}/api/executor/orders/{order_id}", headers=executor_headers)
     if response.status_code != 200:
         print(f"   Ошибка получения деталей заказа: {response.text}")
         return
@@ -145,7 +145,7 @@ def test_orders_functionality():
         }
         
         response = requests.put(
-            f"{BASE_URL}/executor/products/{product['id']}/purchase", 
+            f"{BASE_URL}/api/executor/products/{product['id']}/purchase", 
             json=purchase_data, 
             headers=executor_headers
         )
@@ -170,7 +170,7 @@ def test_orders_functionality():
     
     # 10. Завершаем заказ
     print("\n10. Завершение заказа...")
-    response = requests.put(f"{BASE_URL}/executor/orders/{order_id}/complete", headers=executor_headers)
+    response = requests.put(f"{BASE_URL}/api/executor/orders/{order_id}/complete", headers=executor_headers)
     if response.status_code != 200:
         print(f"   Ошибка завершения заказа: {response.text}")
         return

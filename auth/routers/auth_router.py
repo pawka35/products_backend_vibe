@@ -15,7 +15,7 @@ from auth.crud import (
 from auth.utils import create_access_token, get_current_active_user
 from config import settings
 
-router = APIRouter(prefix="/auth", tags=["authentication"])
+router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
 @router.post("/register", response_model=UserResponse)
 async def register(user: UserCreate, db: Session = Depends(get_db)):

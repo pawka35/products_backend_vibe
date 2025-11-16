@@ -16,7 +16,7 @@ def test_admin_functions():
         "password": "Admin123!"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=admin_login)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=admin_login)
     if response.status_code != 200:
         print(f"   Ошибка получения токена админа: {response.text}")
         return
@@ -27,7 +27,7 @@ def test_admin_functions():
     
     # 2. Получение статистики пользователей
     print("\n2. Получение статистики пользователей...")
-    response = requests.get(f"{BASE_URL}/admin/statistics", headers=admin_headers)
+    response = requests.get(f"{BASE_URL}/api/admin/statistics", headers=admin_headers)
     if response.status_code != 200:
         print(f"   Ошибка получения статистики: {response.text}")
         return
@@ -38,7 +38,7 @@ def test_admin_functions():
     
     # 3. Получение списка всех пользователей
     print("\n3. Получение списка всех пользователей...")
-    response = requests.get(f"{BASE_URL}/admin/users", headers=admin_headers)
+    response = requests.get(f"{BASE_URL}/api/admin/users", headers=admin_headers)
     if response.status_code != 200:
         print(f"   Ошибка получения пользователей: {response.text}")
         return
@@ -58,7 +58,7 @@ def test_admin_functions():
         if test_user:
             role_data = {"new_role": "executor"}
             response = requests.put(
-                f"{BASE_URL}/admin/users/{test_user['id']}/role",
+                f"{BASE_URL}/api/admin/users/{test_user['id']}/role",
                 json=role_data,
                 headers=admin_headers
             )
@@ -75,7 +75,7 @@ def test_admin_functions():
     if test_user:
         password_data = {"new_password": "newpassword123"}
         response = requests.put(
-            f"{BASE_URL}/admin/users/{test_user['id']}/password",
+            f"{BASE_URL}/api/admin/users/{test_user['id']}/password",
             json=password_data,
             headers=admin_headers
         )
@@ -87,7 +87,7 @@ def test_admin_functions():
     
         # 6. Проверка, что изменения применились
         print("\n6. Проверка изменений...")
-        response = requests.get(f"{BASE_URL}/admin/users/{test_user['id']}", headers=admin_headers)
+        response = requests.get(f"{BASE_URL}/api/admin/users/{test_user['id']}", headers=admin_headers)
         if response.status_code != 200:
             print(f"   Ошибка получения пользователя: {response.text}")
             return
@@ -102,7 +102,7 @@ def test_admin_functions():
             "password": "newpassword123"
         }
         
-        response = requests.post(f"{BASE_URL}/auth/token", data=new_login)
+        response = requests.post(f"{BASE_URL}/api/auth/token", data=new_login)
         if response.status_code != 200:
             print(f"   Ошибка входа с новым паролем: {response.text}")
         else:
@@ -126,7 +126,7 @@ def test_admin_create_user():
         "password": "Admin123!"
     }
     
-    response = requests.post(f"{BASE_URL}/auth/token", data=admin_login)
+    response = requests.post(f"{BASE_URL}/api/auth/token", data=admin_login)
     if response.status_code != 200:
         print(f"   Ошибка получения токена админа: {response.text}")
         return
@@ -145,7 +145,7 @@ def test_admin_create_user():
     }
     
     response = requests.post(
-        f"{BASE_URL}/admin/users",
+        f"{BASE_URL}/api/admin/users",
         json=customer_data,
         headers=admin_headers
     )
@@ -168,7 +168,7 @@ def test_admin_create_user():
     }
     
     response = requests.post(
-        f"{BASE_URL}/admin/users",
+        f"{BASE_URL}/api/admin/users",
         json=executor_data,
         headers=admin_headers
     )
@@ -191,7 +191,7 @@ def test_admin_create_user():
     }
     
     response = requests.post(
-        f"{BASE_URL}/admin/users",
+        f"{BASE_URL}/api/admin/users",
         json=admin_data,
         headers=admin_headers
     )
@@ -214,7 +214,7 @@ def test_admin_create_user():
     }
     
     response = requests.post(
-        f"{BASE_URL}/admin/users",
+        f"{BASE_URL}/api/admin/users",
         json=duplicate_data,
         headers=admin_headers
     )
@@ -234,7 +234,7 @@ def test_admin_create_user():
     }
     
     response = requests.post(
-        f"{BASE_URL}/admin/users",
+        f"{BASE_URL}/api/admin/users",
         json=duplicate_email_data,
         headers=admin_headers
     )
@@ -252,7 +252,7 @@ def test_admin_create_user():
             "password": "SecurePass123!"
         }
         
-        response = requests.post(f"{BASE_URL}/auth/token", data=new_admin_login)
+        response = requests.post(f"{BASE_URL}/api/auth/token", data=new_admin_login)
         if response.status_code == 200:
             print("   Новый администратор успешно вошел в систему")
             new_admin_token = response.json()["access_token"]
@@ -269,7 +269,7 @@ def test_admin_create_user():
             }
             
             response = requests.post(
-                f"{BASE_URL}/admin/users",
+                f"{BASE_URL}/api/admin/users",
                 json=test_user_data,
                 headers=new_admin_headers
             )
@@ -283,7 +283,7 @@ def test_admin_create_user():
     
     # 8. Получение статистики
     print("\n9. Получение обновленной статистики...")
-    response = requests.get(f"{BASE_URL}/admin/statistics", headers=admin_headers)
+    response = requests.get(f"{BASE_URL}/api/admin/statistics", headers=admin_headers)
     if response.status_code == 200:
         stats = response.json()
         print(f"   Всего пользователей: {stats['total_users']}")
