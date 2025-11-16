@@ -160,6 +160,51 @@ class TelegramService:
             logger.error(f"Параметры запроса: chat_id={telegram_id}, message_length={len(message)}")
             return False
     
+    def format_order_created_message(self, order) -> str:
+        """
+        Форматирует сообщение о создании заказа
+        
+        Args:
+            order: Объект Order из БД
+            
+        Returns:
+            Отформатированное сообщение
+        """
+        from datetime import datetime
+        
+        # Форматируем дату создания
+        if order.created_at:
+            created_date = order.created_at.strftime("%d.%m.%Y %H:%M")
+        else:
+            created_date = "не указана"
+        
+        # Получаем имя исполнителя
+        executor_name = order.executor.username if order.executor else "Не указан"
+        
+        # Подсчитываем количество продуктов
+        total_products = len(order.products) if order.products else 0
+        
+        # Формируем сообщение
+        message = f"📦 <b>Создан новый заказ #{order.id}</b>\n\n"
+        message += f"Исполнитель: {executor_name}\n"
+        message += f"Дата создания: {created_date}\n"
+        message += f"Количество продуктов: {total_products}\n"
+        
+        # Добавляем список продуктов, если их немного (до 5)
+        if order.products and len(order.products) <= 5:
+            message += "\n<b>Продукты:</b>\n"
+            for product in order.products:
+                product_line = f"• {product.name}"
+                if product.quantity > 1:
+                    product_line += f" (x{product.quantity})"
+                if product.notes:
+                    product_line += f" - {product.notes}"
+                message += product_line + "\n"
+        elif order.products and len(order.products) > 5:
+            message += f"\n(Список из {len(order.products)} продуктов доступен в приложении)"
+        
+        return message
+    
     def format_order_completed_message(self, order) -> str:
         """
         Форматирует сообщение о завершении заказа
@@ -191,6 +236,42 @@ class TelegramService:
             message += f"\nКомментарий исполнителя:\n{order.complete_comment}"
         
         return message
+    
+    def send_order_created_notification(self, order, db) -> bool:
+        """
+        Отправляет уведомление о создании заказа заказчику
+        
+        Args:
+            order: Объект Order из БД
+            db: Сессия базы данных
+            
+        Returns:
+            True если уведомление отправлено, False в противном случае
+        """
+        from notifications.crud import notification_crud
+        
+        # Получаем настройки уведомлений заказчика
+        settings_obj = notification_crud.get_notification_settings(db, order.customer_id)
+        
+        # Проверяем, включены ли уведомления
+        if not settings_obj or not settings_obj.telegram_enabled:
+            logger.debug(f"Уведомления отключены для пользователя {order.customer_id}")
+            return False
+        
+        if not settings_obj.notify_order_completed:
+            # Используем ту же настройку, что и для завершения заказа
+            # Если пользователь хочет получать уведомления о завершении, логично получать и о создании
+            logger.debug(f"Уведомления о заказах отключены для пользователя {order.customer_id}")
+            return False
+        
+        # Проверяем, есть ли у заказчика привязанный Telegram
+        if not order.customer.telegram_id:
+            logger.debug(f"У пользователя {order.customer_id} не привязан Telegram")
+            return False
+        
+        # Форматируем и отправляем сообщение
+        message = self.format_order_created_message(order)
+        return self.send_message(order.customer.telegram_id, message)
     
     def send_order_completed_notification(self, order, db) -> bool:
         """

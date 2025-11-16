@@ -28,6 +28,29 @@ def create_order(db: Session, order: OrderCreate, customer_id: int):
     
     db.commit()
     db.refresh(db_order)
+    
+    # Отправляем уведомление о создании заказа через Telegram
+    try:
+        from notifications.services import TelegramService
+        from config import settings
+        
+        if settings.TELEGRAM_ENABLED:
+            # Загружаем связанные объекты для уведомления
+            db_order = db.query(Order).options(
+                joinedload(Order.customer),
+                joinedload(Order.executor),
+                joinedload(Order.products)
+            ).filter(Order.id == db_order.id).first()
+            
+            if db_order:
+                telegram_service = TelegramService()
+                telegram_service.send_order_created_notification(db_order, db)
+    except Exception as e:
+        # Логируем ошибку, но не прерываем выполнение
+        import logging
+        logger = logging.getLogger("notifications")
+        logger.error(f"Ошибка при отправке уведомления о создании заказа {db_order.id}: {e}")
+    
     return db_order
 
 def get_order(db: Session, order_id: int):
@@ -420,6 +443,29 @@ def copy_order(db: Session, order_id: int, customer_id: int):
     
     db.commit()
     db.refresh(db_order)
+    
+    # Отправляем уведомление о создании заказа через Telegram
+    try:
+        from notifications.services import TelegramService
+        from config import settings
+        
+        if settings.TELEGRAM_ENABLED:
+            # Загружаем связанные объекты для уведомления
+            db_order = db.query(Order).options(
+                joinedload(Order.customer),
+                joinedload(Order.executor),
+                joinedload(Order.products)
+            ).filter(Order.id == db_order.id).first()
+            
+            if db_order:
+                telegram_service = TelegramService()
+                telegram_service.send_order_created_notification(db_order, db)
+    except Exception as e:
+        # Логируем ошибку, но не прерываем выполнение
+        import logging
+        logger = logging.getLogger("notifications")
+        logger.error(f"Ошибка при отправке уведомления о создании заказа (копия) {db_order.id}: {e}")
+    
     return db_order
 
 # CRUD операции для продуктов
