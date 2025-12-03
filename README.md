@@ -138,47 +138,77 @@ docker compose down
 - `POST /api/auth/register` - Регистрация пользователя
 - `POST /api/auth/token` - Получение JWT токена
 - `GET /api/auth/me` - Информация о текущем пользователе
+- `PUT /api/auth/me` - Обновление профиля пользователя (username и/или email)
+- `PUT /api/auth/me/password` - Изменение пароля текущего пользователя
 
 ### Пользователи
 - `GET /users/` - Список всех пользователей
 - `GET /users/{id}` - Информация о пользователе
 
-### Административные функции
-- `GET /api/admin/statistics` - Статистика пользователей
-- `GET /api/admin/users` - Управление пользователями
-- `PUT /api/admin/users/{id}/role` - Изменение роли пользователя
-- `PUT /api/admin/users/{id}/password` - Изменение пароля
+### Административные функции (только для администраторов)
+- `POST /api/admin/users` - Создание нового пользователя (с любой ролью, включая admin)
+- `GET /api/admin/users` - Список всех пользователей с фильтрами и пагинацией
+- `GET /api/admin/users/{user_id}` - Детальная информация о пользователе
+- `PUT /api/admin/users/{user_id}/role` - Изменение роли пользователя
+- `PUT /api/admin/users/{user_id}/password` - Изменение пароля пользователя
+- `DELETE /api/admin/users/{user_id}` - Деактивация пользователя
+- `GET /api/admin/users/role/{role}` - Пользователи с определенной ролью
+- `GET /api/admin/statistics` - Статистика пользователей системы
+- `POST /api/admin/users/bulk/change-role` - Массовое изменение ролей пользователей
+- `GET /api/admin/orders` - Список всех заказов с фильтрами и пагинацией
 
 ### Управление ролями (только для администраторов)
 - `GET /api/admin/roles` - Список всех ролей
 - `POST /api/admin/roles` - Создание новой роли
-- `GET /api/admin/roles/users/{id}` - Роли пользователя
-- `GET /api/admin/roles/{id}/users` - Пользователи с ролью
+- `GET /api/admin/roles/{role_id}` - Получение роли по ID
+- `PUT /api/admin/roles/{role_id}` - Обновление роли
+- `DELETE /api/admin/roles/{role_id}` - Удаление роли
+- `POST /api/admin/roles/{role_id}/activate` - Активация роли
+- `GET /api/admin/roles/users/{user_id}` - Роли пользователя
+- `GET /api/admin/roles/{role_id}/users` - Пользователи с ролью
 - `POST /api/admin/roles/users/assign` - Назначение роли пользователю
-- `DELETE /api/admin/roles/users/{id}` - Удаление роли у пользователя
+- `PUT /api/admin/roles/users/{role_assignment_id}` - Обновление назначения роли пользователю
+- `DELETE /api/admin/roles/users/{role_assignment_id}` - Удаление роли у пользователя
 
 ### Заказы (Customer)
 - `POST /api/customer/orders` - Создание нового заказа
-- `GET /api/customer/orders` - Список заказов текущего пользователя с фильтрами
+- `GET /api/customer/orders/executors` - Список доступных исполнителей
+- `GET /api/customer/orders` - Список заказов текущего пользователя с фильтрами и пагинацией
 - `GET /api/customer/orders/{id}` - Детали заказа
 - `GET /api/customer/orders/{id}/summary` - Сводка по заказу
-- `PUT /api/customer/orders/{id}` - Редактирование заказа
+- `PUT /api/customer/orders/{id}` - Редактирование заказа (только со статусом pending)
 - `POST /api/customer/orders/{id}/copy` - Копирование заказа
-- `POST /api/customer/orders/{id}/cancel` - Отмена заказа
+- `POST /api/customer/orders/{id}/cancel` - Отмена заказа (только со статусом pending)
 - `GET /api/customer/orders/statistics/by-status` - Статистика заказов по статусам (опциональный фильтр `?status=pending`)
 
+### Сохраненные товары (Customer)
+- `POST /api/customer/products/saved` - Создание сохраненного товара
+- `GET /api/customer/products/saved` - Список сохраненных товаров с пагинацией
+- `GET /api/customer/products/saved/{id}` - Детали сохраненного товара
+- `PUT /api/customer/products/saved/{id}` - Обновление сохраненного товара
+- `DELETE /api/customer/products/saved/{id}` - Удаление сохраненного товара
+
+### Поиск продуктов (Customer)
+- `POST /api/customer/search/products` - Поиск продуктов с пагинацией
+
 ### Исполнение заказов (Executor)
-- `GET /api/executor/orders` - Доступные заказы с фильтрами
+- `GET /api/executor/orders` - Доступные заказы с фильтрами и пагинацией
 - `GET /api/executor/orders/{id}` - Детали заказа
 - `GET /api/executor/orders/{id}/summary` - Сводка по заказу
-- `PUT /api/executor/orders/{id}/start` - Начало исполнения
-- `PUT /api/executor/products/{id}/purchase` - Отметка покупки
+- `PUT /api/executor/orders/{id}/start` - Начало исполнения заказа
+- `PUT /api/executor/products/{id}/purchase` - Отметка продукта как купленного
 - `PUT /api/executor/products/{id}/unpurchase` - Снятие пометки покупки
 - `PUT /api/executor/orders/{id}/complete` - Завершение заказа
 - `GET /api/executor/orders/statistics/by-status` - Статистика заказов по статусам (опциональный фильтр `?status=completed`)
+- `GET /api/executor/customers` - Список всех заказчиков
 
-### Поиск продуктов
-- `POST /products/search` - Поиск продуктов с пагинацией
+### Уведомления (Telegram)
+- `POST /api/notifications/telegram/request-code` - Запрос кода верификации для привязки Telegram
+- `GET /api/notifications/telegram/status` - Статус подключения Telegram
+- `DELETE /api/notifications/telegram/disconnect` - Отвязка Telegram от аккаунта
+- `GET /api/notifications/settings` - Получение настроек уведомлений
+- `PUT /api/notifications/settings` - Обновление настроек уведомлений
+- `POST /api/notifications/telegram/webhook` - Webhook для обработки команд от Telegram бота
 
 ## 🔒 Безопасность
 
