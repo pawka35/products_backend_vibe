@@ -17,7 +17,9 @@ from products.schemas import (
     SavedProduct,
     SavedProductListResponse,
     ProductSearchRequest,
-    ProductSearchResponse
+    ProductSearchResponse,
+    OrderStatusStatistics,
+    OrderStatusCount
 )
 from auth.utils import get_current_active_user
 from auth.utils.role_utils import has_customer_access
@@ -36,7 +38,8 @@ from products.crud import (
     get_user_saved_products,
     get_user_saved_products_count,
     update_saved_product,
-    delete_saved_product
+    delete_saved_product,
+    get_user_orders_count_by_status
 )
 from auth.crud import get_user, get_users_by_role
 from auth.schemas import UserList
@@ -233,6 +236,50 @@ async def get_order_summary_endpoint(
         raise HTTPException(status_code=404, detail="Сводка не найдена")
     
     return summary
+
+@router.get("/orders/statistics/by-status", response_model=OrderStatusStatistics)
+async def get_orders_statistics_by_status(
+    status: Optional[OrderStatus] = Query(
+        None,
+        description="Опциональный фильтр по статусу. Если указан, возвращается только количество заказов в этом статусе."
+    ),
+    current_user: UserModel = Depends(require_customer),
+    db: Session = Depends(get_db)
+):
+    """
+    Получение статистики заказов по статусам (только для заказчиков)
+    
+    Возвращает количество заказов текущего пользователя по каждому статусу:
+    - pending: Ожидает исполнения
+    - in_progress: В процессе исполнения
+    - completed: Исполнен
+    - cancelled: Отменен
+    
+    Если передан параметр `status`, возвращается только количество заказов в указанном статусе.
+    
+    Также возвращает общее количество заказов (всех или только в указанном статусе).
+    """
+    status_counts = get_user_orders_count_by_status(db, current_user.id, status)
+    
+    # Если указан конкретный статус, возвращаем только его
+    if status is not None:
+        statistics = [
+            OrderStatusCount(status=status, count=status_counts[status])
+        ]
+        total = status_counts[status]
+    else:
+        # Формируем список статистики по всем статусам
+        statistics = [
+            OrderStatusCount(status=stat, count=count)
+            for stat, count in status_counts.items()
+        ]
+        # Вычисляем общее количество заказов
+        total = sum(status_counts.values())
+    
+    return OrderStatusStatistics(
+        statistics=statistics,
+        total=total
+    )
 
 @router.put("/orders/{order_id}", response_model=OrderSchema)
 async def edit_order(

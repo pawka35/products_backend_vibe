@@ -7,7 +7,8 @@ from .product_crud import (
     get_executor_orders_with_filters, get_executor_orders_count_with_filters,
     get_all_orders_with_users_and_filters,
     create_saved_product, get_saved_product, get_user_saved_products,
-    get_user_saved_products_count, update_saved_product, delete_saved_product
+    get_user_saved_products_count, update_saved_product, delete_saved_product,
+    get_user_orders_count_by_status, get_executor_orders_count_by_status
 )
 from .search_crud import (
     create_search_record, get_user_search_history, get_search_statistics,
@@ -24,6 +25,7 @@ __all__ = [
     "get_all_orders_with_users_and_filters",
     "create_saved_product", "get_saved_product", "get_user_saved_products",
     "get_user_saved_products_count", "update_saved_product", "delete_saved_product",
+    "get_user_orders_count_by_status", "get_executor_orders_count_by_status",
     "create_search_record", "get_user_search_history", "get_search_statistics",
     "delete_search_record", "clear_user_search_history"
 ]

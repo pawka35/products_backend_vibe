@@ -164,3 +164,13 @@ class SavedProductListResponse(BaseModel):
     """Схема ответа со списком сохраненных товаров"""
     products: List[SavedProduct]
     total_count: int
+
+class OrderStatusCount(BaseModel):
+    """Схема для количества заказов по статусу"""
+    status: OrderStatus
+    count: int
+
+class OrderStatusStatistics(BaseModel):
+    """Схема статистики заказов по статусам"""
+    statistics: List[OrderStatusCount]
+    total: int

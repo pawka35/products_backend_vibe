@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_, desc
+from sqlalchemy import and_, desc, func
 from products.models import Product, Order, OrderStatus, SavedProduct
 from products.schemas import ProductCreate, OrderCreate, ProductPurchase, OrderEdit, SavedProductCreate, SavedProductUpdate
 from datetime import datetime
@@ -673,3 +673,113 @@ def delete_saved_product(db: Session, saved_product_id: int, user_id: int):
     db.delete(db_saved_product)
     db.commit()
     return True
+
+def get_user_orders_count_by_status(db: Session, user_id: int, status: Optional[OrderStatus] = None) -> Dict[OrderStatus, int]:
+    """
+    Получение количества заказов пользователя по каждому статусу
+    
+    Args:
+        db: Сессия базы данных
+        user_id: ID пользователя (заказчика)
+        status: Опциональный статус для фильтрации. Если указан, возвращается только этот статус.
+    
+    Returns:
+        Словарь с количеством заказов по каждому статусу (или только указанному статусу)
+    """
+    query = db.query(
+        Order.status,
+        func.count(Order.id).label('count')
+    ).filter(
+        Order.customer_id == user_id
+    )
+    
+    # Если указан конкретный статус, фильтруем по нему
+    if status is not None:
+        query = query.filter(Order.status == status)
+        results = query.group_by(Order.status).all()
+        
+        # Возвращаем только указанный статус
+        status_counts = {
+            OrderStatus.PENDING: 0,
+            OrderStatus.IN_PROGRESS: 0,
+            OrderStatus.COMPLETED: 0,
+            OrderStatus.CANCELLED: 0
+        }
+        
+        # Заполняем только указанный статус
+        for result_status, count in results:
+            status_counts[result_status] = count
+        
+        return status_counts
+    
+    # Если статус не указан, возвращаем все статусы
+    results = query.group_by(Order.status).all()
+    
+    # Создаем словарь со всеми статусами (даже если заказов нет)
+    status_counts = {
+        OrderStatus.PENDING: 0,
+        OrderStatus.IN_PROGRESS: 0,
+        OrderStatus.COMPLETED: 0,
+        OrderStatus.CANCELLED: 0
+    }
+    
+    # Заполняем словарь результатами запроса
+    for result_status, count in results:
+        status_counts[result_status] = count
+    
+    return status_counts
+
+def get_executor_orders_count_by_status(db: Session, executor_id: int, status: Optional[OrderStatus] = None) -> Dict[OrderStatus, int]:
+    """
+    Получение количества заказов исполнителя по каждому статусу
+    
+    Args:
+        db: Сессия базы данных
+        executor_id: ID исполнителя
+        status: Опциональный статус для фильтрации. Если указан, возвращается только этот статус.
+    
+    Returns:
+        Словарь с количеством заказов по каждому статусу (или только указанному статусу)
+    """
+    query = db.query(
+        Order.status,
+        func.count(Order.id).label('count')
+    ).filter(
+        Order.executor_id == executor_id
+    )
+    
+    # Если указан конкретный статус, фильтруем по нему
+    if status is not None:
+        query = query.filter(Order.status == status)
+        results = query.group_by(Order.status).all()
+        
+        # Возвращаем только указанный статус
+        status_counts = {
+            OrderStatus.PENDING: 0,
+            OrderStatus.IN_PROGRESS: 0,
+            OrderStatus.COMPLETED: 0,
+            OrderStatus.CANCELLED: 0
+        }
+        
+        # Заполняем только указанный статус
+        for result_status, count in results:
+            status_counts[result_status] = count
+        
+        return status_counts
+    
+    # Если статус не указан, возвращаем все статусы
+    results = query.group_by(Order.status).all()
+    
+    # Создаем словарь со всеми статусами (даже если заказов нет)
+    status_counts = {
+        OrderStatus.PENDING: 0,
+        OrderStatus.IN_PROGRESS: 0,
+        OrderStatus.COMPLETED: 0,
+        OrderStatus.CANCELLED: 0
+    }
+    
+    # Заполняем словарь результатами запроса
+    for result_status, count in results:
+        status_counts[result_status] = count
+    
+    return status_counts
