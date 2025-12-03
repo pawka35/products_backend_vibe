@@ -48,19 +48,31 @@ products/
 
 ## 📚 API Endpoints
 
-### Заказы
-- `GET /orders/` - Список всех заказов
-- `POST /orders/` - Создание нового заказа
-- `GET /orders/{id}/summary` - Сводка по заказу
+### Заказы (Customer)
+- `POST /api/customer/orders` - Создание нового заказа
+- `GET /api/customer/orders` - Список заказов текущего пользователя с фильтрами и пагинацией
+- `GET /api/customer/orders/{id}` - Детали заказа
+- `GET /api/customer/orders/{id}/summary` - Сводка по заказу
+- `PUT /api/customer/orders/{id}` - Редактирование заказа (только со статусом pending)
+- `POST /api/customer/orders/{id}/copy` - Копирование заказа
+- `POST /api/customer/orders/{id}/cancel` - Отмена заказа
+- `GET /api/customer/orders/statistics/by-status` - Статистика заказов по статусам
+  - Опциональный параметр `?status=pending|in_progress|completed|cancelled` для фильтрации
 
-### Исполнение заказов
-- `GET /executor/orders` - Доступные заказы для исполнения
-- `PUT /executor/orders/{id}/start` - Начало исполнения заказа
-- `PUT /executor/products/{id}/purchase` - Отметка продукта как купленного
-- `PUT /executor/orders/{id}/complete` - Завершение заказа
+### Исполнение заказов (Executor)
+- `GET /api/executor/orders` - Доступные заказы для исполнения с фильтрами и пагинацией
+- `GET /api/executor/orders/{id}` - Детали заказа
+- `GET /api/executor/orders/{id}/summary` - Сводка по заказу
+- `PUT /api/executor/orders/{id}/start` - Начало исполнения заказа
+- `PUT /api/executor/products/{id}/purchase` - Отметка продукта как купленного
+- `PUT /api/executor/products/{id}/unpurchase` - Снятие пометки покупки
+- `PUT /api/executor/orders/{id}/complete` - Завершение заказа
+- `GET /api/executor/orders/statistics/by-status` - Статистика заказов по статусам
+  - Опциональный параметр `?status=pending|in_progress|completed|cancelled` для фильтрации
+- `GET /api/executor/customers` - Список всех заказчиков
 
-### Поиск продуктов
-- `POST /products/search` - Поиск продуктов с пагинацией
+### Поиск продуктов (Customer)
+- `POST /api/customer/search/products` - Поиск продуктов с пагинацией
 
 ## 🔒 Модели данных
 
@@ -252,11 +264,36 @@ MAX_PAGE_SIZE=100
 - **Кэширование** результатов для оптимизации
 - **Обработка ошибок** внешних API
 
+## 📊 Статистика заказов
+
+### Эндпоинты статистики
+- **Customer**: `GET /api/customer/orders/statistics/by-status`
+- **Executor**: `GET /api/executor/orders/statistics/by-status`
+
+### Формат ответа
+```json
+{
+  "statistics": [
+    {"status": "pending", "count": 5},
+    {"status": "in_progress", "count": 2},
+    {"status": "completed", "count": 10},
+    {"status": "cancelled", "count": 1}
+  ],
+  "total": 18
+}
+```
+
+### Фильтрация по статусу
+Добавьте параметр `?status=<статус>` для получения статистики только по конкретному статусу:
+- `GET /api/customer/orders/statistics/by-status?status=completed`
+- `GET /api/executor/orders/statistics/by-status?status=pending`
+
 ## 📝 Логирование
 
 - **Создание заказов** - логируется customer_id и продукты
 - **Исполнение заказов** - логируется executor_id и действия
 - **Поиск продуктов** - логируется запрос и результаты
+- **Статистика заказов** - логируется запрос и результаты
 - **Ошибки** - детальное логирование для отладки
 
 ## 🚨 Ограничения

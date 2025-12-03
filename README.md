@@ -15,6 +15,7 @@
 - Роли: admin, customer, executor
 - Административные функции управления пользователями
 - Автоматическое создание первого администратора при запуске
+- Скрипт для сброса пароля администратора (`reset_admin_password.py`)
 
 ### 🎭 Управление ролями
 - Создание и управление ролями (только для администраторов)
@@ -27,6 +28,8 @@
 - Исполнение заказов
 - Отслеживание статуса заказов
 - Управление продуктами в заказах
+- Статистика заказов по статусам для customer и executor
+- Фильтрация статистики по конкретному статусу
 
 ### 🔍 Поиск продуктов
 - Поиск по внешнему API (MaxiRetail)
@@ -154,16 +157,25 @@ docker compose down
 - `POST /api/admin/roles/users/assign` - Назначение роли пользователю
 - `DELETE /api/admin/roles/users/{id}` - Удаление роли у пользователя
 
-### Заказы
-- `GET /orders/` - Список заказов
-- `POST /orders/` - Создание заказа
-- `GET /orders/{id}/summary` - Сводка по заказу
+### Заказы (Customer)
+- `POST /api/customer/orders` - Создание нового заказа
+- `GET /api/customer/orders` - Список заказов текущего пользователя с фильтрами
+- `GET /api/customer/orders/{id}` - Детали заказа
+- `GET /api/customer/orders/{id}/summary` - Сводка по заказу
+- `PUT /api/customer/orders/{id}` - Редактирование заказа
+- `POST /api/customer/orders/{id}/copy` - Копирование заказа
+- `POST /api/customer/orders/{id}/cancel` - Отмена заказа
+- `GET /api/customer/orders/statistics/by-status` - Статистика заказов по статусам (опциональный фильтр `?status=pending`)
 
-### Исполнение заказов
-- `GET /api/executor/orders` - Доступные заказы
+### Исполнение заказов (Executor)
+- `GET /api/executor/orders` - Доступные заказы с фильтрами
+- `GET /api/executor/orders/{id}` - Детали заказа
+- `GET /api/executor/orders/{id}/summary` - Сводка по заказу
 - `PUT /api/executor/orders/{id}/start` - Начало исполнения
 - `PUT /api/executor/products/{id}/purchase` - Отметка покупки
+- `PUT /api/executor/products/{id}/unpurchase` - Снятие пометки покупки
 - `PUT /api/executor/orders/{id}/complete` - Завершение заказа
+- `GET /api/executor/orders/statistics/by-status` - Статистика заказов по статусам (опциональный фильтр `?status=completed`)
 
 ### Поиск продуктов
 - `POST /products/search` - Поиск продуктов с пагинацией
@@ -175,6 +187,24 @@ docker compose down
 - **Хеширование паролей** с bcrypt
 - **Защита от создания администраторов** через регистрацию
 - **Автоматическая инициализация** первого администратора
+
+### Управление паролем администратора
+
+При первом запуске приложения создается администратор с учетными данными:
+- **Username**: `admin`
+- **Email**: `admin@system.local`
+- **Password**: генерируется случайно и выводится в консоль
+
+**Важно**: Пароль показывается только один раз при создании!
+
+Для сброса пароля администратора используйте скрипт:
+```bash
+# С случайным паролем
+python3 reset_admin_password.py
+
+# С указанным паролем
+python3 reset_admin_password.py "новый_пароль"
+```
 
 ## 🧪 Тестирование
 
