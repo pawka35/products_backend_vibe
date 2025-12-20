@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
 from database import get_db
 from auth.models import User as UserModel, UserRole
@@ -237,7 +237,7 @@ async def get_order_summary_endpoint(
     
     return summary
 
-@router.get("/orders/statistics/by-status", response_model=OrderStatusStatistics)
+@router.get("/orders/statistics/by-status", response_model=Dict[str, int])
 async def get_orders_statistics_by_status(
     status: Optional[OrderStatus] = Query(
         None,
@@ -249,37 +249,25 @@ async def get_orders_statistics_by_status(
     """
     Получение статистики заказов по статусам (только для заказчиков)
     
-    Возвращает количество заказов текущего пользователя по каждому статусу:
+    Возвращает словарь, где ключ - статус заявки, значение - количество заявок в таком статусе.
+    
+    Статусы:
     - pending: Ожидает исполнения
     - in_progress: В процессе исполнения
     - completed: Исполнен
     - cancelled: Отменен
     
     Если передан параметр `status`, возвращается только количество заказов в указанном статусе.
-    
-    Также возвращает общее количество заказов (всех или только в указанном статусе).
     """
     status_counts = get_user_orders_count_by_status(db, current_user.id, status)
     
-    # Если указан конкретный статус, возвращаем только его
-    if status is not None:
-        statistics = [
-            OrderStatusCount(status=status, count=status_counts[status])
-        ]
-        total = status_counts[status]
-    else:
-        # Формируем список статистики по всем статусам
-        statistics = [
-            OrderStatusCount(status=stat, count=count)
-            for stat, count in status_counts.items()
-        ]
-        # Вычисляем общее количество заказов
-        total = sum(status_counts.values())
+    # Преобразуем словарь с OrderStatus ключами в словарь со строковыми ключами
+    result = {
+        stat.value: count
+        for stat, count in status_counts.items()
+    }
     
-    return OrderStatusStatistics(
-        statistics=statistics,
-        total=total
-    )
+    return result
 
 @router.put("/orders/{order_id}", response_model=OrderSchema)
 async def edit_order(
