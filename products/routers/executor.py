@@ -373,7 +373,7 @@ async def get_orders_statistics_by_status(
     # Преобразуем словарь с OrderStatus ключами в словарь со строковыми ключами
     result = {
         stat.value: count
-        for stat, count in status_counts.items()
+            for stat, count in status_counts.items()
     }
     
     return result
